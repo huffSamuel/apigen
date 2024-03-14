@@ -1,0 +1,63 @@
+import '../schemas/schema.dart';
+
+abstract class Node {
+  String id;
+
+  Node(this.id);
+}
+
+class PropertyNode extends Node {
+  final OpenApiSchema schema;
+
+  late String name;
+  late String type;
+
+  /// If set, this property referenced a type that had not yet been identified and
+  /// needs to be finished at a later time.
+  ///
+  /// This assists in identifying enums.
+  String? typeReference;
+
+  // If set, this property's [type] is a typedef.
+  bool isTypedef = false;
+  bool apiType = false;
+  bool isEnumType = false;
+  bool required = false;
+  bool get readonly => schema.readOnly ?? false;
+  bool get isArray => schema is OpenApiArraySchema;
+
+  PropertyNode(super.id, this.schema);
+}
+
+class EnumValueDecl extends Node {
+  String? description;
+
+  late String typeName;
+  late dynamic value;
+  late String name;
+
+  EnumValueDecl(super.id);
+}
+
+class TypeDeclNode extends Node {
+  late String typeName;
+  late String fileName;
+
+  bool isTypedef = false;
+  String typedef = '';
+
+  final OpenApiSchema schema;
+  final List<PropertyNode> properties = [];
+  final List<TypeDeclNode> typeDecls = [];
+  final List<String> referencedFiles = [];
+
+  bool isEnum = false;
+  List<EnumValueDecl> enumValues = [];
+
+  TypeDeclNode(super.name, this.schema);
+
+  @override
+  String toString() {
+    return id;
+  }
+}
