@@ -54,6 +54,7 @@ OpenApiIntegerSchema _$OpenApiIntegerSchemaFromJson(
       comment: json[r'$comment'] as String?,
       enumValues: json['enum'] as List<dynamic>? ?? [],
       constValue: json['const'],
+      description: json['description'] as String?,
     );
 
 OpenApiNumberSchema _$OpenApiNumberSchemaFromJson(Map<String, dynamic> json) =>
@@ -71,6 +72,7 @@ OpenApiNumberSchema _$OpenApiNumberSchemaFromJson(Map<String, dynamic> json) =>
       comment: json[r'$comment'] as String?,
       enumValues: json['enum'] as List<dynamic>? ?? [],
       constValue: json['const'],
+      description: json['description'] as String?,
     );
 
 OpenApiObjectSchema _$OpenApiObjectSchemaFromJson(Map<String, dynamic> json) =>
@@ -125,6 +127,7 @@ OpenApiArraySchema _$OpenApiArraySchemaFromJson(Map<String, dynamic> json) =>
       comment: json[r'$comment'] as String?,
       enumValues: json['enum'] as List<dynamic>? ?? [],
       constValue: json['const'],
+      description: json['description'] as String?,
     );
 
 OpenApiBooleanSchema _$OpenApiBooleanSchemaFromJson(
@@ -138,6 +141,7 @@ OpenApiBooleanSchema _$OpenApiBooleanSchemaFromJson(
       comment: json[r'$comment'] as String?,
       enumValues: json['enum'] as List<dynamic>? ?? [],
       constValue: json['const'],
+      description: json['description'] as String?,
     );
 
 OpenApiNullSchema _$OpenApiNullSchemaFromJson(Map<String, dynamic> json) =>
@@ -150,4 +154,5 @@ OpenApiNullSchema _$OpenApiNullSchemaFromJson(Map<String, dynamic> json) =>
       comment: json[r'$comment'] as String?,
       enumValues: json['enum'] as List<dynamic>? ?? [],
       constValue: json['const'],
+      description: json['description'] as String?,
     );

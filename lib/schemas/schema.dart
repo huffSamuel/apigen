@@ -163,6 +163,7 @@ abstract class OpenApiNumericSchema<T> extends OpenApiSchema {
     super.comment,
     super.enumValues,
     super.constValue,
+    super.description,
   });
 }
 
@@ -182,6 +183,7 @@ class OpenApiIntegerSchema extends OpenApiNumericSchema<int> {
     super.comment,
     super.enumValues,
     super.constValue,
+    super.description,
   });
 
   factory OpenApiIntegerSchema.fromJson(JsonMap json) =>
@@ -204,6 +206,7 @@ class OpenApiNumberSchema extends OpenApiNumericSchema<int> {
     super.comment,
     super.enumValues,
     super.constValue,
+    super.description,
   });
 
   factory OpenApiNumberSchema.fromJson(JsonMap json) =>
@@ -272,6 +275,7 @@ class OpenApiArraySchema extends OpenApiSchema {
     super.comment,
     super.enumValues,
     super.constValue,
+    super.description,
   });
 
   factory OpenApiArraySchema.fromJson(JsonMap json) =>
@@ -301,6 +305,7 @@ class OpenApiBooleanSchema extends OpenApiSchema {
     super.comment,
     super.enumValues,
     super.constValue,
+    super.description,
   });
 
   factory OpenApiBooleanSchema.fromJson(JsonMap json) =>
@@ -318,6 +323,7 @@ class OpenApiNullSchema extends OpenApiSchema {
     super.comment,
     super.enumValues,
     super.constValue,
+    super.description,
   });
 
   factory OpenApiNullSchema.fromJson(Map<String, dynamic> json) =>
