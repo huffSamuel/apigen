@@ -2,7 +2,62 @@ import 'dart:io';
 
 import '../syntax/node.dart';
 
+// TODO: for classes create a better deserializer
+// TODO: See if we can inspect a generic's prototype. If so, the new Value() 
+// call needs to try to call `fromJson()` on that generic type
+/*
+
+static fromJson(json: any): Type {
+
+  const o = new Type();
+
+  Object.assign(o, {
+    accountId: value<string>(json, 'AccountId').optional(),
+    symbol: value<string>(json, 'Symbol'),
+    headquarters: value<string>(json, 'Headquarters'),
+    credits: value<number>(json, 'Credits'),
+    startingFaction: value<string>(json, 'StartingFaction'),
+    shipCount: value<number>(json, 'ShipCount')
+  });
+}
+
+value<T>(j: any, k: string): Value<T> {
+  return new Value(j[k]);
+}
+
+class DeserializedValue<T> {
+  public readonly T? value;
+
+  constructor(this.value){}
+
+  required(): T {
+    if (this.value == null || this.value == undefined) {
+      throw 'Deserialization error, required property missing';
+    }
+
+    return this.value!;
+  }
+
+  optional(): T? {
+    return this.value;
+  }
+
+  toDate() {
+    if (this.value == null || this.value == undefined) {
+      return new DeserializedValue<Date>(null);
+    }
+
+    return new DeserializedValue(new Date(this.value));
+  }
+}
+
+*/
+const helper = '''
+''';
+
 class TypescriptCodeGenerator {
+  Map<String, String> additionalFiles = {'util/helper.ts': helper};
+
   generate(List<Node> syntax) {
     final out = Directory('./out/dto');
 
@@ -11,6 +66,17 @@ class TypescriptCodeGenerator {
     }
 
     out.createSync();
+
+    for (final additionalFile in additionalFiles.entries) {
+      final file = File('./out/${additionalFile.key}');
+      final dir = file.parent;
+
+      if (!dir.existsSync()) {
+        dir.createSync();
+      }
+
+      file.writeAsStringSync(additionalFile.value);
+    }
 
     for (final c in syntax.whereType<TypeDeclNode>()) {
       String src;
