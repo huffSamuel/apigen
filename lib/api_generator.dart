@@ -131,8 +131,6 @@ class SyntaxBuilder {
             if (e.value.enumValues?.isNotEmpty == true) {
               syntax.add(enums(e.key, e.value)!);
             } else {
-              // TODO: This needs the proper typename of the thing
-              // And the name of the type that it's typedef-ing
               final t = TypeDeclNode(e.key, e.value);
               t.typeName = config.typeName(e.key);
               t.fileName = config.fileName(e.key);

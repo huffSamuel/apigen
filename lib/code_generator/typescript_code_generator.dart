@@ -1,7 +1,5 @@
 import 'dart:io';
 
-import 'package:json_annotation/json_annotation.dart';
-
 import '../syntax/node.dart';
 
 class TypescriptCodeGenerator {
@@ -17,10 +15,10 @@ class TypescriptCodeGenerator {
     for (final c in syntax.whereType<TypeDeclNode>()) {
       String src;
 
-      if(c.isEnum) {
+      if (c.isEnum) {
         src = kenum(c);
       } else if (c.isTypedef) {
-        src = 'type ${c.typeName} = ${c.typedef};';
+        src = ktypedef(c);
       } else {
         src = klass(c);
       }
@@ -29,6 +27,23 @@ class TypescriptCodeGenerator {
 
       file.writeAsStringSync(src);
     }
+  }
+
+  ktypedef(TypeDeclNode n) {
+    return '''
+${description(n.description)}
+type ${n.typeName} = ${n.typedef};
+''';
+  }
+
+  String description(String? d) {
+    if (d == null) {
+      return '';
+    }
+
+    return '''/**
+ * ${d}
+ */''';
   }
 
   deserializer(TypeDeclNode n) {
@@ -81,13 +96,16 @@ ${deserialize(p)}
   }
 
   kenum(TypeDeclNode n) {
-    return '''export enum ${n.typeName} {
+    return '''
+${description(n.description)}
+export enum ${n.typeName} {
   ${n.enumValues.map((x) => "${x.name} = '${x.value}',").join('\r\n  ')}
 }''';
   }
 
   klass(TypeDeclNode n) {
     final source = '''${n.referencedFiles.map((x) => imports(x)).join('\r\n')}
+${description(n.description)}
 export class ${n.typeName} {
   ${n.properties.map(property).join('\r\n  ')}
 
@@ -114,7 +132,14 @@ export class ${n.typeName} {
   }
 
   property(PropertyNode n) {
-    final sb = StringBuffer('public');
+    final sb = StringBuffer();
+
+    if (n.description != null) {
+      sb.writeln(description(n.description));
+      sb.write('  ');
+    }
+
+    sb.write('public');
 
     if (n.readonly) {
       sb.write(' readonly');

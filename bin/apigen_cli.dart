@@ -1,6 +1,6 @@
 import 'package:args/args.dart';
 
-import '../src/api_generator.dart';
+import '../lib/api_generator.dart';
 
 const String version = '0.0.1';
 

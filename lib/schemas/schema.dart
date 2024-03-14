@@ -220,7 +220,7 @@ class OpenApiObjectSchema extends OpenApiSchema {
 
   @JsonKey(defaultValue: [])
   final List<String> required;
-  
+
   final bool? additionalProperties;
 
   OpenApiObjectSchema({
@@ -236,6 +236,7 @@ class OpenApiObjectSchema extends OpenApiSchema {
     super.comment,
     super.enumValues,
     super.constValue,
+    super.description,
   });
 
   factory OpenApiObjectSchema.fromJson(JsonMap json) =>

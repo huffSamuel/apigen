@@ -99,6 +99,7 @@ OpenApiObjectSchema _$OpenApiObjectSchemaFromJson(Map<String, dynamic> json) =>
       comment: json[r'$comment'] as String?,
       enumValues: json['enum'] as List<dynamic>? ?? [],
       constValue: json['const'],
+      description: json['description'] as String?,
     );
 
 OpenApiArraySchema _$OpenApiArraySchemaFromJson(Map<String, dynamic> json) =>

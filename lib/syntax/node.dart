@@ -9,6 +9,8 @@ abstract class Node {
 class PropertyNode extends Node {
   final OpenApiSchema schema;
 
+  String? get description => schema.description?.trim();
+
   late String name;
   late String type;
 
@@ -45,6 +47,8 @@ class TypeDeclNode extends Node {
 
   bool isTypedef = false;
   String typedef = '';
+
+  String? get description => schema.description?.trim();
 
   final OpenApiSchema schema;
   final List<PropertyNode> properties = [];
