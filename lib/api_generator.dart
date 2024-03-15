@@ -11,12 +11,15 @@ import 'syntax/node.dart';
 class ApiGenerator {
   final cg = TypescriptCodeGenerator();
   final s = SyntaxBuilder(TypescriptConfiguration());
+  final a = ApiBuilder();
 
   Future<void> generate(String schemaPath) async {
     var schemaText = jsonDecode(await File(schemaPath).readAsString());
     var schema = OpenApi.fromJson(schemaText);
     var syntax = s.build(schema);
     cg.generate(syntax);
+
+    // a.build(schema);
   }
 }
 
@@ -79,7 +82,14 @@ class SyntaxBuilder {
         t.typeDecls.add(type(name, obj));
         break;
       default:
+        // TODO: This needs to handle enums
         pr.type = config.typeName(schema.type ?? 'unknown');
+
+        if (schema.enumValues?.isNotEmpty == true) {
+          pr.apiType = true;
+          pr.isEnumType = true;
+          t.typeDecls.add(enums(name, schema));
+        }
         break;
     }
 
@@ -103,15 +113,11 @@ class SyntaxBuilder {
     return t;
   }
 
-  TypeDeclNode? enums(
+  TypeDeclNode enums(
     String name,
     OpenApiSchema obj,
   ) {
     final t = TypeDeclNode(name, obj);
-
-    if (obj.enumValues?.isNotEmpty != true) {
-      return null;
-    }
 
     t.isEnum = true;
     t.typeName = config.typeName(name);
@@ -132,17 +138,18 @@ class SyntaxBuilder {
   List<Node> build(
     OpenApi schema,
   ) {
-    List<TypeDeclNode> syntax = [];
+    // TODO: This should probably become a map for faster post-loop lookups
+    Map<String, TypeDeclNode> syntax = {};
 
     if (schema.components != null) {
       for (final e in schema.components!.schemas.entries) {
         switch (e.value) {
           case final OpenApiObjectSchema obj:
-            syntax.add(type(e.key, obj));
+            syntax[e.key] = type(e.key, obj);
             break;
           default:
             if (e.value.enumValues?.isNotEmpty == true) {
-              syntax.add(enums(e.key, e.value)!);
+              syntax[e.key] = enums(e.key, e.value);
             } else {
               final t = TypeDeclNode(e.key, e.value);
               t.typeName = config.typeName(e.key);
@@ -150,7 +157,7 @@ class SyntaxBuilder {
               t.isTypedef = true;
               t.typedef = e.value.type!;
 
-              syntax.add(t);
+              syntax[e.key] = t;
             }
 
             break;
@@ -158,42 +165,62 @@ class SyntaxBuilder {
       }
     }
 
-    for (final t in syntax) {
+    for (final t in syntax.values) {
       for (final p in t.properties) {
         if (p.typeReference == null) {
           continue;
         }
 
         // Find the matching type decl
-        // TODO: Make syntax a map<String, TypeDeclNode> for faster lookup
         final type =
-            syntax.singleWhere((element) => element.id == p.typeReference);
+            syntax.values.singleWhere((element) => element.id == p.typeReference);
 
+        // And complete the referenced information.
+        // Alternatively, we could push ever schema into a list and
+        // process it if it doesn't reference any other type. If it does, push it
+        // back into the end of the list for further processing. OR be cool kids
+        // and run through once to build a dependency graph and process types in that order...
+        // I think this is probably fine though.
         p.isEnumType = type.isEnum;
         p.isTypedef = type.isTypedef;
       }
     }
 
-    // Any "object" schemas nested within another type get promoted to a full type here
+    // Any object or enum schemas nested within another type get promoted to a full type here
     // CONSIDER: Is this the best option? Or should they be kept within the source code
     // files for the type they are nested underneath?
     // TODO: Avoid name collisions
-    final typesWithDecls = syntax.where((x) => x.typeDecls.isNotEmpty).toList();
+    final typesWithDecls = syntax.values.where((x) => x.typeDecls.isNotEmpty).toList();
 
     for (final typeWithDecls in typesWithDecls) {
       for (final c in typeWithDecls.typeDecls) {
+        // Find the propery associated with the decl
         final p = typeWithDecls.properties.singleWhere((x) => x.id == c.id);
 
-        if (syntax.any((x) => x.id == c.id)) {
+        if (syntax.containsKey(c.id)) {
           c.typeName = config.className(typeWithDecls.typeName + c.typeName);
+          c.fileName = config.fileName(c.typeName);
         }
 
         p.type = c.typeName;
-        syntax.add(c);
+        syntax[c.typeName] = c;
+        typeWithDecls.references[c.fileName] = Set.from([c.typeName]);
       }
     }
 
-    return syntax;
+    return syntax.values.toList();
+  }
+}
+
+class ApiBuilder {
+  build(OpenApi schema) {
+    final Map<String, List<dynamic>> apis = {'default': []};
+
+    if (schema.paths?.paths != null) {
+      for (final path in schema.paths!.paths!.entries) {
+        log('Generate path for', [path.key]);
+      }
+    }
   }
 }
 

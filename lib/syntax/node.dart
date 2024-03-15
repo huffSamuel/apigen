@@ -14,6 +14,10 @@ class PropertyNode extends Node {
   late String name;
   late String type;
 
+  bool required = false;
+  bool get readonly => schema.readOnly ?? false;
+  bool get isArray => schema is OpenApiArraySchema;
+
   /// If set, this property referenced a type that had not yet been identified and
   /// needs to be finished at a later time.
   ///
@@ -22,11 +26,12 @@ class PropertyNode extends Node {
 
   // If set, this property's [type] is a typedef.
   bool isTypedef = false;
+
+  /// If set, this type is defined by the API.
   bool apiType = false;
+
+  /// If set, this type is an enum
   bool isEnumType = false;
-  bool required = false;
-  bool get readonly => schema.readOnly ?? false;
-  bool get isArray => schema is OpenApiArraySchema;
 
   PropertyNode(super.id, this.schema);
 }

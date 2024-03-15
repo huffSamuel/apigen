@@ -13,7 +13,9 @@ OpenApi _$OpenApiFromJson(Map<String, dynamic> json) => OpenApi(
       servers: (json['servers'] as List<dynamic>?)
           ?.map((e) => OpenApiServer.fromJson(e as Map<String, dynamic>))
           .toList(),
-      paths: pathsFromJson(json['paths'] as Map<String, dynamic>),
+      paths: json['paths'] == null
+          ? null
+          : OpenApiPaths.fromJson(json['paths'] as Map<String, dynamic>),
       webhooks: json['webhooks'] as Map<String, dynamic>?,
       components: json['components'] == null
           ? null

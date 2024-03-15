@@ -76,6 +76,8 @@ class TypescriptCodeGenerator {
   Map<String, String> additionalFiles = {'util/helper.ts': helper};
 
   generate(List<Node> syntax) {
+    // TODO: Don't split this into separate files. Since it's generated we want to
+    // re-create a single {name}APIClient file each time.
     final out = Directory('./out/dto');
 
     if (out.existsSync()) {
@@ -103,7 +105,7 @@ class TypescriptCodeGenerator {
       } else if (c.isTypedef) {
         src = ktypedef(c);
       } else {
-        src = klass(c);
+        src = kinterface(c);
       }
 
       final file = File('./out/dto/' + c.fileName + '.ts');
@@ -156,6 +158,8 @@ export type ${n.typeName} = ${n.typedef};
       sb.write('(json, \'${p.id}\', ${p.type}.fromJson)');
     }
 
+    // TODO: Add constraint validation (min, max, etc)
+
     if (p.required) {
       sb.write('.required()');
     } else {
@@ -186,17 +190,13 @@ export enum ${n.typeName} {
 }''';
   }
 
-  klass(TypeDeclNode n) {
+  kinterface(TypeDeclNode n) {
     final i = n.references.entries.map((x) => imports(x.key, x.value));
 
     final source = '''${i.join('\r\n')}
-import { value, array } from '../util/helper';
-
 ${description(n.description)}
-export class ${n.typeName} {
+export interface ${n.typeName} {
   ${n.properties.map(property).join('\r\n  ')}
-
-  ${deserializer(n)}
 }''';
 
     return source;
@@ -224,12 +224,6 @@ export class ${n.typeName} {
     if (n.description != null) {
       sb.writeln(description(n.description));
       sb.write('  ');
-    }
-
-    sb.write('public');
-
-    if (n.readonly) {
-      sb.write(' readonly');
     }
 
     sb.write(' ${n.name}');

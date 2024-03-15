@@ -5,10 +5,6 @@ import 'schema.dart';
 
 part 'spec_file.g.dart';
 
-OpenApiPaths? pathsFromJson(Map<String, dynamic> j) {
-  return null;
-}
-
 @JsonSerializable()
 class OpenApi {
   /// The version number of the OpenAPI specification that the OpenAPI document uses.
@@ -24,7 +20,7 @@ class OpenApi {
   final List<OpenApiServer>? servers;
 
   /// Available paths and operations for the API.
-  @JsonKey(fromJson: pathsFromJson)
+  @JsonKey()
   final OpenApiPaths? paths;
 
   /// The incoming webhooks that MAY be received as part of this API and that the API
