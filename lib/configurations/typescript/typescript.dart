@@ -56,5 +56,5 @@ class TypescriptConfiguration extends LanguageSpecificConfiguration {
   }
 
   @override
-  List<String> get reservedWords => ['yield'];
+  List<String> get reservedWords => ['yield', 'object'];
 }

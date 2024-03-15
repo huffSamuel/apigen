@@ -47,7 +47,7 @@ class SyntaxBuilder {
     switch (schema) {
       // TODO: We need to add the value deserializaiton helper for the specified language
       case final OpenApiArraySchema ray:
-      // TODO: We need to add the array deserialization helpers for the specific language
+        // TODO: We need to add the array deserialization helpers for the specific language
         switch (ray.items!.a) {
           case final OpenApiReferenceSchema ref:
             pr.apiType = true;
@@ -57,8 +57,8 @@ class SyntaxBuilder {
             t.references.putOrAdd(config.fileName(pr.type), pr.type);
             break;
           case final OpenApiObjectSchema obj:
-            pr.type = config.className(obj.type!);
-            t.references.putOrAdd(config.fileName(pr.type), pr.type);
+            pr.type = config.className(name);
+            t.references.putOrAdd(config.fileName(name), name);
             t.typeDecls.add(type(name, obj));
             break;
           default:
@@ -71,6 +71,12 @@ class SyntaxBuilder {
         pr.type =
             config.className(ref.ref.substring(ref.ref.lastIndexOf('/') + 1));
         t.references.putOrAdd(config.fileName(pr.type), pr.type);
+        break;
+      case final OpenApiObjectSchema obj:
+        pr.apiType = true;
+        pr.type = config.className(name);
+        t.references.putOrAdd(config.fileName(name), name);
+        t.typeDecls.add(type(name, obj));
         break;
       default:
         pr.type = config.typeName(schema.type ?? 'unknown');
