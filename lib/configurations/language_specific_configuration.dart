@@ -8,4 +8,5 @@ abstract class LanguageSpecificConfiguration {
   String propertyName(String name);
   String enumValueName(String name);
   String fileName(String name);
+  String methodName(String name);
 }

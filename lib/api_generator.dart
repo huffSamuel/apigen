@@ -11,7 +11,7 @@ import 'syntax/node.dart';
 class ApiGenerator {
   final cg = TypescriptCodeGenerator();
   final s = SyntaxBuilder(TypescriptConfiguration());
-  final a = ApiBuilder();
+  final a = ApiBuilder(TypescriptConfiguration());
 
   Future<void> generate(String schemaPath) async {
     var schemaText = jsonDecode(await File(schemaPath).readAsString());
@@ -19,7 +19,7 @@ class ApiGenerator {
     var syntax = s.build(schema);
     cg.generate(syntax);
 
-    // a.build(schema);
+    a.build(schema);
   }
 }
 
@@ -48,9 +48,11 @@ class SyntaxBuilder {
     pr.name = config.propertyName(name);
 
     switch (schema) {
-      // TODO: We need to add the value deserializaiton helper for the specified language
+      // TODO: We need to add a reference to the value deserialization helper for the specific language
+      // e.g. t.references['util/helper'] = ['value']
       case final OpenApiArraySchema ray:
-        // TODO: We need to add the array deserialization helpers for the specific language
+        // TODO: We need to add a reference to the array deserialization helper for the specific language
+        // e.g. t.references['util/helper'] = ['array']
         switch (ray.items!.a) {
           case final OpenApiReferenceSchema ref:
             pr.apiType = true;
@@ -82,7 +84,6 @@ class SyntaxBuilder {
         t.typeDecls.add(type(name, obj));
         break;
       default:
-        // TODO: This needs to handle enums
         pr.type = config.typeName(schema.type ?? 'unknown');
 
         if (schema.enumValues?.isNotEmpty == true) {
@@ -138,7 +139,6 @@ class SyntaxBuilder {
   List<Node> build(
     OpenApi schema,
   ) {
-    // TODO: This should probably become a map for faster post-loop lookups
     Map<String, TypeDeclNode> syntax = {};
 
     if (schema.components != null) {
@@ -172,8 +172,8 @@ class SyntaxBuilder {
         }
 
         // Find the matching type decl
-        final type =
-            syntax.values.singleWhere((element) => element.id == p.typeReference);
+        final type = syntax.values
+            .singleWhere((element) => element.id == p.typeReference);
 
         // And complete the referenced information.
         // Alternatively, we could push ever schema into a list and
@@ -189,12 +189,12 @@ class SyntaxBuilder {
     // Any object or enum schemas nested within another type get promoted to a full type here
     // CONSIDER: Is this the best option? Or should they be kept within the source code
     // files for the type they are nested underneath?
-    // TODO: Avoid name collisions
-    final typesWithDecls = syntax.values.where((x) => x.typeDecls.isNotEmpty).toList();
+    final typesWithDecls =
+        syntax.values.where((x) => x.typeDecls.isNotEmpty).toList();
 
     for (final typeWithDecls in typesWithDecls) {
       for (final c in typeWithDecls.typeDecls) {
-        // Find the propery associated with the decl
+        // Find the property associated with the decl
         final p = typeWithDecls.properties.singleWhere((x) => x.id == c.id);
 
         if (syntax.containsKey(c.id)) {
@@ -213,14 +213,57 @@ class SyntaxBuilder {
 }
 
 class ApiBuilder {
+  final LanguageSpecificConfiguration config;
+
+  ApiBuilder(this.config);
+
+  methodName(String operationId) {
+    final parts = camelCase(operationId.split('-'));
+
+    return config.methodName(parts);
+  }
+
   build(OpenApi schema) {
     final Map<String, List<dynamic>> apis = {'default': []};
 
     if (schema.paths?.paths != null) {
       for (final path in schema.paths!.paths!.entries) {
-        log('Generate path for', [path.key]);
+        for (final operation in operations(path.value).entries) {
+          // TODO: Working here. Convert the operation ID into a method name
+          // Group the methods by their Tags
+          // Un-taged methods go in "default"
+          // Generate an APIClient object
+          // Generate APIClient objects for each of the tags
+          // Group the APIClient objects under a {SpacetradersClient}
+          log('Generating API method', [
+            path.key,
+            operation.key,
+            operation.value.tags,
+            methodName(operation.value.operationId!)
+          ]);
+        }
       }
     }
+  }
+
+  Map<String, OpenApiOperation> operations(OpenApiPath path) {
+    final Map<String, OpenApiOperation> operations = {};
+    final ops = {
+      'get': path.get,
+      'put': path.put,
+      'post': path.post,
+      'delete': path.delete,
+      'options': path.options,
+      'head': path.head,
+      'patch': path.patch,
+      'trace': path.trace,
+    }..removeWhere((k, v) => v == null);
+
+    for (final entry in ops.entries) {
+      operations[entry.key] = entry.value!;
+    }
+
+    return operations;
   }
 }
 

@@ -57,4 +57,9 @@ class TypescriptConfiguration extends LanguageSpecificConfiguration {
 
   @override
   List<String> get reservedWords => ['yield', 'object'];
+  
+  @override
+  String methodName(String name) {
+    return camelCase([name]);
+  }
 }
