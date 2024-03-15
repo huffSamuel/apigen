@@ -18,12 +18,6 @@ class ApiGenerator {
     var syntax = s.build(schema);
     cg.generate(syntax);
   }
-
-  // Pass in the params
-  // Read in the schema
-  // Create an AST
-  // "compile" the AST to the target framework
-  // Check if output directory exists
 }
 
 // CLI Params
@@ -51,7 +45,9 @@ class SyntaxBuilder {
     pr.name = config.propertyName(name);
 
     switch (schema) {
+      // TODO: We need to add the value deserializaiton helper for the specified language
       case final OpenApiArraySchema ray:
+      // TODO: We need to add the array deserialization helpers for the specific language
         switch (ray.items!.a) {
           case final OpenApiReferenceSchema ref:
             pr.apiType = true;
@@ -172,7 +168,10 @@ class SyntaxBuilder {
       }
     }
 
-    // Promote nested types to a full type definition
+    // Any "object" schemas nested within another type get promoted to a full type here
+    // CONSIDER: Is this the best option? Or should they be kept within the source code
+    // files for the type they are nested underneath?
+    // TODO: Avoid name collisions
     final typesWithDecls = syntax.where((x) => x.typeDecls.isNotEmpty).toList();
 
     for (final typeWithDecls in typesWithDecls) {

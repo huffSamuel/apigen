@@ -5,7 +5,7 @@ import '../syntax/node.dart';
 const helper = '''export const value = <T>(
   json: any,
   key: string,
-  fromJson?: (j) => T
+  fromJson?: (j: Record<string, any>) => T
 ): DeserializedValue<T> => {
   let v = json[key];
 
@@ -13,35 +13,35 @@ const helper = '''export const value = <T>(
     v = fromJson(v);
   }
 
-  return new DeserializedValue<T>(v);
+  return new DeserializedValue<T>(v, key);
 };
 
 export const array = <T>(
   json: any,
   key: string,
-  fromJson?: (j) => T
+  fromJson?: (j: Record<string, any>) => T
 ): DeserializedValue<T[]> => {
   let v = json[key];
 
   if (v && fromJson) {
-    v = v.map(x => fromJson(x));
+    v = v.map((x: Record<string, any>) => fromJson(x as Record<string, any>));
   } else if (v) {
-    v = v.map(x => x as T);
+    v = v.map((x: T) => x);
   }
 
-  return new DeserializedValue<T[]>(v);
+  return new DeserializedValue<T[]>(v, key);
 };
 
 class DeserializedValue<T> {
   public readonly value: T | null | undefined;
 
-  constructor(value: T | null | undefined) {
+  constructor(value: T | null | undefined, private readonly name: string) {
     this.value = value;
   }
 
   required(): T {
     if (this.value == null || this.value === undefined) {
-      throw 'Deserialization error, required property missing';
+      throw `Deserialization error, required property \${this.name} missing`;
     }
 
     return this.value!;
@@ -53,21 +53,20 @@ class DeserializedValue<T> {
 
   toDate() {
     if (this.value == null || this.value == undefined) {
-      return new DeserializedValue<Date>(null);
+      return new DeserializedValue<Date>(null, this.name);
     }
 
     if (
       typeof this.value !== 'string' &&
-      typeof this.value !== 'number' &&
-      this.value! instanceof Date
+      typeof this.value !== 'number' && 
+      !(this.value instanceof Date)
     ) {
-      return new DeserializedValue<Date>(null);
+      return new DeserializedValue<Date>(null, this.name);
     }
 
-    return new DeserializedValue(new Date(this.value as any));
+    return new DeserializedValue(new Date(this.value as any), this.name);
   }
-}
-''';
+}''';
 
 // TODO: for classes create a better deserializer
 // TODO: See if we can inspect a generic's prototype. If so, the new Value()
@@ -116,7 +115,7 @@ class TypescriptCodeGenerator {
   ktypedef(TypeDeclNode n) {
     return '''
 ${description(n.description)}
-type ${n.typeName} = ${n.typedef};
+export type ${n.typeName} = ${n.typedef};
 ''';
   }
 
@@ -136,8 +135,7 @@ type ${n.typeName} = ${n.typedef};
 
     Object.assign(o, {
       ${n.properties.map(deserialize).join(',\r\n      ')}
-    })
-
+    });
 
     return o;
   }
