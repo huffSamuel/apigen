@@ -174,7 +174,7 @@ ${deserialize(p)}
 ''';
   }
 
-  String imports(String fileName, List<String> types) {
+  String imports(String fileName, Iterable<String> types) {
     return 'import { ${types.join(', ')} } from "./${fileName}";';
   }
 

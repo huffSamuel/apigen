@@ -25,10 +25,10 @@ class ApiGenerator {
 // --schema, -s <path>
 // --format, -f [format...]
 
-extension PutOrAdd<T extends String, K extends dynamic> on Map<T, List<K>> {
+extension PutOrAdd<T extends String, K extends dynamic> on Map<T, Set<K>> {
   void putOrAdd(T key, K value) {
     if (!containsKey(key)) {
-      this[key] = [];
+      this[key] = new Set<K>();
     }
 
     this[key]!.add(value);
