@@ -53,7 +53,7 @@ class TypeDeclNode extends Node {
   final OpenApiSchema schema;
   final List<PropertyNode> properties = [];
   final List<TypeDeclNode> typeDecls = [];
-  final List<String> referencedFiles = [];
+  final Map<String, List<String>> references = {};
 
   bool isEnum = false;
   List<EnumValueDecl> enumValues = [];

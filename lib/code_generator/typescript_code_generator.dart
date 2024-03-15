@@ -2,43 +2,52 @@ import 'dart:io';
 
 import '../syntax/node.dart';
 
-// TODO: for classes create a better deserializer
-// TODO: See if we can inspect a generic's prototype. If so, the new Value() 
-// call needs to try to call `fromJson()` on that generic type
-/*
+const helper = '''export const value = <T>(
+  json: any,
+  key: string,
+  fromJson?: (j) => T
+): DeserializedValue<T> => {
+  let v = json[key];
 
-static fromJson(json: any): Type {
+  if (v && fromJson) {
+    v = fromJson(v);
+  }
 
-  const o = new Type();
+  return new DeserializedValue<T>(v);
+};
 
-  Object.assign(o, {
-    accountId: value<string>(json, 'AccountId').optional(),
-    symbol: value<string>(json, 'Symbol'),
-    headquarters: value<string>(json, 'Headquarters'),
-    credits: value<number>(json, 'Credits'),
-    startingFaction: value<string>(json, 'StartingFaction'),
-    shipCount: value<number>(json, 'ShipCount')
-  });
-}
+export const array = <T>(
+  json: any,
+  key: string,
+  fromJson?: (j) => T
+): DeserializedValue<T[]> => {
+  let v = json[key];
 
-value<T>(j: any, k: string): Value<T> {
-  return new Value(j[k]);
-}
+  if (v && fromJson) {
+    v = v.map(x => fromJson(x));
+  } else if (v) {
+    v = v.map(x => x as T);
+  }
+
+  return new DeserializedValue<T[]>(v);
+};
 
 class DeserializedValue<T> {
-  public readonly T? value;
+  public readonly value: T | null | undefined;
 
-  constructor(this.value){}
+  constructor(value: T | null | undefined) {
+    this.value = value;
+  }
 
   required(): T {
-    if (this.value == null || this.value == undefined) {
+    if (this.value == null || this.value === undefined) {
       throw 'Deserialization error, required property missing';
     }
 
     return this.value!;
   }
 
-  optional(): T? {
+  optional(): T | null | undefined {
     return this.value;
   }
 
@@ -47,13 +56,22 @@ class DeserializedValue<T> {
       return new DeserializedValue<Date>(null);
     }
 
-    return new DeserializedValue(new Date(this.value));
+    if (
+      typeof this.value !== 'string' &&
+      typeof this.value !== 'number' &&
+      this.value! instanceof Date
+    ) {
+      return new DeserializedValue<Date>(null);
+    }
+
+    return new DeserializedValue(new Date(this.value as any));
   }
 }
-
-*/
-const helper = '''
 ''';
+
+// TODO: for classes create a better deserializer
+// TODO: See if we can inspect a generic's prototype. If so, the new Value()
+// call needs to try to call `fromJson()` on that generic type
 
 class TypescriptCodeGenerator {
   Map<String, String> additionalFiles = {'util/helper.ts': helper};
@@ -116,9 +134,10 @@ type ${n.typeName} = ${n.typedef};
     return '''static fromJson(json: any): ${n.typeName} {
     const o = new ${n.typeName}();
 
-    // TODO: Handle checking required properties exist
+    Object.assign(o, {
+      ${n.properties.map(deserialize).join(',\r\n      ')}
+    })
 
-    ${n.properties.map(deserialize).join('\r\n    ')}
 
     return o;
   }
@@ -126,26 +145,26 @@ type ${n.typeName} = ${n.typedef};
   }
 
   String deserialize(PropertyNode p) {
-    if (p.apiType) {
-      if (p.isArray) {
-        // TODO: Handle optional
-        return 'o.${p.name} = json[\'${p.id}\'].map((x) => ${p.type}.fromJson(x));';
-      }
+    final sb = StringBuffer('${p.name}: ');
 
-      if (p.isEnumType) {
-        return 'o.${p.name} = json[\'${p.id}\']';
-      }
-
-      if (p.isTypedef) {
-        return 'o.${p.name} = json[\'${p.id}\'] as ${p.type};';
-      }
-
-      return 'o.${p.name} = ${p.type}.fromJson(json[\'${p.id}\'])';
+    if (p.isArray) {
+      sb.write('array');
+    } else {
+      sb.write('value');
+    }
+    if (p.isEnumType || p.isTypedef || !p.apiType) {
+      sb.write('<${p.type}>(json, \'${p.id}\')');
+    } else {
+      sb.write('(json, \'${p.id}\', ${p.type}.fromJson)');
     }
 
-    // TODO: Handle special deserializers (like new Date())
+    if (p.required) {
+      sb.write('.required()');
+    } else {
+      sb.write('.optional()');
+    }
 
-    return 'o.${p.name} = json[\'${p.id}\'];';
+    return sb.toString();
   }
 
   String requiredDeserialize(PropertyNode p) {
@@ -157,8 +176,8 @@ ${deserialize(p)}
 ''';
   }
 
-  imports(String fileName) {
-    return 'import "./${fileName}";';
+  String imports(String fileName, List<String> types) {
+    return 'import { ${types.join(', ')} } from "./${fileName}";';
   }
 
   kenum(TypeDeclNode n) {
@@ -170,7 +189,11 @@ export enum ${n.typeName} {
   }
 
   klass(TypeDeclNode n) {
-    final source = '''${n.referencedFiles.map((x) => imports(x)).join('\r\n')}
+    final i = n.references.entries.map((x) => imports(x.key, x.value));
+
+    final source = '''${i.join('\r\n')}
+import { value, array } from '../util/helper';
+
 ${description(n.description)}
 export class ${n.typeName} {
   ${n.properties.map(property).join('\r\n  ')}

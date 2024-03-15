@@ -31,6 +31,16 @@ class ApiGenerator {
 // --schema, -s <path>
 // --format, -f [format...]
 
+extension PutOrAdd<T extends String, K extends dynamic> on Map<T, List<K>> {
+  void putOrAdd(T key, K value) {
+    if (!containsKey(key)) {
+      this[key] = [];
+    }
+
+    this[key]!.add(value);
+  }
+}
+
 class SyntaxBuilder {
   final LanguageSpecificConfiguration config;
 
@@ -47,11 +57,12 @@ class SyntaxBuilder {
             pr.apiType = true;
             pr.type = config
                 .className(ref.ref.substring(ref.ref.lastIndexOf('/') + 1));
-            t.referencedFiles.add(config.fileName(pr.type));
+
+            t.references.putOrAdd(config.fileName(pr.type), pr.type);
             break;
           case final OpenApiObjectSchema obj:
             pr.type = config.className(obj.type!);
-            t.referencedFiles.add(config.fileName(pr.type));
+            t.references.putOrAdd(config.fileName(pr.type), pr.type);
             t.typeDecls.add(type(name, obj));
             break;
           default:
@@ -63,7 +74,7 @@ class SyntaxBuilder {
         pr.typeReference = ref.ref.substring(ref.ref.lastIndexOf('/') + 1);
         pr.type =
             config.className(ref.ref.substring(ref.ref.lastIndexOf('/') + 1));
-        t.referencedFiles.add(config.fileName(pr.type));
+        t.references.putOrAdd(config.fileName(pr.type), pr.type);
         break;
       default:
         pr.type = config.typeName(schema.type ?? 'unknown');
