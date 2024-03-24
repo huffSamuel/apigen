@@ -9,4 +9,8 @@ abstract class LanguageSpecificConfiguration {
   String enumValueName(String name);
   String fileName(String name);
   String methodName(String name);
+
+  bool get supportsOneOf;
+  bool get supportsAnyOf;
+  bool get supportsAllOf;
 }

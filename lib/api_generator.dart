@@ -4,9 +4,12 @@ import 'dart:io';
 import 'code_generator/typescript_code_generator.dart';
 import 'configurations/language_specific_configuration.dart';
 import 'configurations/typescript/typescript.dart';
+import 'extension/map.dart';
 import 'schemas/schema.dart';
 import 'schemas/spec_file.dart';
+import 'syntax/method_node.dart';
 import 'syntax/node.dart';
+import 'syntax/param_node.dart';
 
 class ApiGenerator {
   final cg = TypescriptCodeGenerator();
@@ -16,10 +19,21 @@ class ApiGenerator {
   Future<void> generate(String schemaPath) async {
     var schemaText = jsonDecode(await File(schemaPath).readAsString());
     var schema = OpenApi.fromJson(schemaText);
-    var syntax = s.build(schema);
-    cg.generate(syntax);
 
-    a.build(schema);
+    final create = ['./out/dto', './out/api'];
+
+    for (final c in create) {
+      final out = Directory(c);
+
+      if (out.existsSync()) {
+        out.deleteSync(recursive: true);
+      }
+
+      out.createSync();
+    }
+
+    cg.generate(s.build(schema));
+    cg.generate(a.build(schema));
   }
 }
 
@@ -27,16 +41,6 @@ class ApiGenerator {
 // --output, -o <path>
 // --schema, -s <path>
 // --format, -f [format...]
-
-extension PutOrAdd<T extends String, K extends dynamic> on Map<T, Set<K>> {
-  void putOrAdd(T key, K value) {
-    if (!containsKey(key)) {
-      this[key] = new Set<K>();
-    }
-
-    this[key]!.add(value);
-  }
-}
 
 class SyntaxBuilder {
   final LanguageSpecificConfiguration config;
@@ -223,27 +227,82 @@ class ApiBuilder {
     return config.methodName(parts);
   }
 
-  build(OpenApi schema) {
-    final Map<String, List<dynamic>> apis = {'default': []};
+  Iterable<Node> build(OpenApi schema) {
+    final Map<String, ApiDeclNode> apis = {
+      'Default': ApiDeclNode('DefaultApi')
+        ..typeName = config.typeName('DefaultApi')
+        ..fileName = config.fileName('DefaultApi'),
+    };
+
+    // TODO: pre-process path items for reference params
+    // schema.components.parameters;
 
     if (schema.paths?.paths != null) {
       for (final path in schema.paths!.paths!.entries) {
+        // TODO: Common parameters are defined here.
+
         for (final operation in operations(path.value).entries) {
-          // TODO: Working here. Convert the operation ID into a method name
-          // Group the methods by their Tags
-          // Un-taged methods go in "default"
-          // Generate an APIClient object
-          // Generate APIClient objects for each of the tags
-          // Group the APIClient objects under a {SpacetradersClient}
-          log('Generating API method', [
-            path.key,
-            operation.key,
-            operation.value.tags,
-            methodName(operation.value.operationId!)
-          ]);
+          final node = MethodNode(operation.key, operation.value);
+          node.name = methodName(operation.value.operationId!);
+          node.path = path.key;
+
+          if (operation.value.parameters?.isNotEmpty == true) {
+            for (final (index, param) in operation.value.parameters!.indexed) {
+              final p = ParamDecl('${operation.value.operationId}.$index');
+
+              if (param.a != null) {
+                // TODO: Pull a reference out of the pre-processed parameters
+                print(
+                    '[INFO]: Get this reference from schema.components.parameters');
+                p.type = 'dynamic';
+              } else if (param.b != null) {
+                p.schema = param.b!;
+
+                if (param.b?.schema?.a?.type != null) {
+                  p.type = config.typeName(param.b!.schema!.a!.type!);
+                } else {
+                  // TODO: Handle composite schemas, likely by generating a new typedef
+                  print(
+                      '[INFO]: This is a composite schema which we cannot process yet');
+                  p.type = 'dynamic';
+                }
+              } else {
+                print(
+                    '[ERROR] Unprocessable parameter - ${operation.value.operationId} parameter $index');
+                continue;
+              }
+
+              node.parameters.add(p);
+            }
+          }
+
+          // TODO: If any param schemas are a composite type that hasn't already been built, we need to build a new type for that composite.
+          // This type needs to be flagged as a composite and the language configuration will determine if it can be written as a composite or if it needs to be a dynamic object.
+
+          // TODO: Add requestbodies to the known typedecls
+          // TODO: Add the request bodies to the method node so it knows how to generate a request
+
+          // TODO: Add responses to the known typedecls
+          // TODO: Add response type to the methodnode
+
+          // TODO: Handle security
+
+          if (operation.value.tags?.isEmpty == true) {
+            apis['Default']!.methods.add(node);
+          } else {
+            for (final at in operation.value.tags!) {
+              apis.putIfAbsent(
+                  at,
+                  () => ApiDeclNode('${at}Api')
+                    ..typeName = config.typeName('${at}Api')
+                    ..fileName = config.fileName('${at}Api'));
+              apis[at]!.methods.add(node);
+            }
+          }
         }
       }
     }
+    return apis.values;
   }
 
   Map<String, OpenApiOperation> operations(OpenApiPath path) {

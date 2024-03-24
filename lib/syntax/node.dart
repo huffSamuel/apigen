@@ -1,3 +1,4 @@
+import 'method_node.dart';
 import '../schemas/schema.dart';
 
 abstract class Node {
@@ -53,17 +54,39 @@ class TypeDeclNode extends Node {
   bool isTypedef = false;
   String typedef = '';
 
-  String? get description => schema.description?.trim();
+  String? get description => schema?.description?.trim();
 
-  final OpenApiSchema schema;
+  final OpenApiSchema? schema;
   final List<PropertyNode> properties = [];
   final List<TypeDeclNode> typeDecls = [];
   final Map<String, Set<String>> references = {};
+  final List<MethodNode> methods = [];
 
   bool isEnum = false;
   List<EnumValueDecl> enumValues = [];
 
-  TypeDeclNode(super.name, this.schema);
+  TypeDeclNode(super.name, [this.schema]);
+
+  @override
+  String toString() {
+    return id;
+  }
+}
+
+class ApiDeclNode extends Node {
+  late String typeName;
+  late String fileName;
+
+  bool isTypedef = false;
+  String typedef = '';
+
+  String? get description => schema?.description?.trim();
+
+  final OpenApiSchema? schema;
+  final Map<String, Set<String>> references = {};
+  final List<MethodNode> methods = [];
+
+  ApiDeclNode(super.name, [this.schema]);
 
   @override
   String toString() {

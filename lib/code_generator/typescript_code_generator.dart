@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import '../syntax/method_node.dart';
 import '../syntax/node.dart';
 
 const helper = '''export const value = <T>(
@@ -75,17 +76,9 @@ class DeserializedValue<T> {
 class TypescriptCodeGenerator {
   Map<String, String> additionalFiles = {'util/helper.ts': helper};
 
-  generate(List<Node> syntax) {
+  generate(Iterable<Node> syntax) {
     // TODO: Don't split this into separate files. Since it's generated we want to
     // re-create a single {name}APIClient file each time.
-    final out = Directory('./out/dto');
-
-    if (out.existsSync()) {
-      out.deleteSync(recursive: true);
-    }
-
-    out.createSync();
-
     for (final additionalFile in additionalFiles.entries) {
       final file = File('./out/${additionalFile.key}');
       final dir = file.parent;
@@ -95,6 +88,12 @@ class TypescriptCodeGenerator {
       }
 
       file.writeAsStringSync(additionalFile.value);
+    }
+
+    for (final c in syntax.whereType<ApiDeclNode>()) {
+      String src = klass(c);
+      final file = File('./out/api/' + c.fileName + '.ts');
+      file.writeAsStringSync(src);
     }
 
     for (final c in syntax.whereType<TypeDeclNode>()) {
@@ -127,55 +126,8 @@ export type ${n.typeName} = ${n.typedef};
     }
 
     return '''/**
- * ${d}
+ * $d
  */''';
-  }
-
-  deserializer(TypeDeclNode n) {
-    return '''static fromJson(json: any): ${n.typeName} {
-    const o = new ${n.typeName}();
-
-    Object.assign(o, {
-      ${n.properties.map(deserialize).join(',\r\n      ')}
-    });
-
-    return o;
-  }
-''';
-  }
-
-  String deserialize(PropertyNode p) {
-    final sb = StringBuffer('${p.name}: ');
-
-    if (p.isArray) {
-      sb.write('array');
-    } else {
-      sb.write('value');
-    }
-    if (p.isEnumType || p.isTypedef || !p.apiType) {
-      sb.write('<${p.type}>(json, \'${p.id}\')');
-    } else {
-      sb.write('(json, \'${p.id}\', ${p.type}.fromJson)');
-    }
-
-    // TODO: Add constraint validation (min, max, etc)
-
-    if (p.required) {
-      sb.write('.required()');
-    } else {
-      sb.write('.optional()');
-    }
-
-    return sb.toString();
-  }
-
-  String requiredDeserialize(PropertyNode p) {
-    return '''
-if(!json['${p.id}']) {
-  throw 'Missing required property: ${p.id}';
-}
-${deserialize(p)}
-''';
   }
 
   String imports(String fileName, Iterable<String> types) {
@@ -188,6 +140,26 @@ ${description(n.description)}
 export enum ${n.typeName} {
   ${n.enumValues.map((x) => "${x.name} = '${x.value}',").join('\r\n  ')}
 }''';
+  }
+
+  klass(ApiDeclNode n) {
+    final source = '''
+export class ${n.typeName} {
+  ${n.methods.map((m) => kmethod(m)).join('\r\n  ')}
+}
+''';
+
+    return source;
+  }
+
+  String kmethod(MethodNode m) {
+    return '''
+${description(m.description)}
+${m.name}(${m.parameters.map((x) => x.name + ': ' + x.type).join(', ')}) {
+  const path = '${m.path}';
+
+}
+''';
   }
 
   kinterface(TypeDeclNode n) {

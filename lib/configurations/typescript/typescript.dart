@@ -7,6 +7,18 @@ String camelCase(List<String> parts) {
 }
 
 class TypescriptConfiguration extends LanguageSpecificConfiguration {
+  // This is type AllOfType = A & B & C;
+  @override
+  bool get supportsAllOf => true;
+
+  // IDK how we'd do this (for now) so unsupported.
+  @override
+  bool get supportsAnyOf => false;
+
+  // This is type OneOfType = A | B | C;
+  @override
+  bool get supportsOneOf => true;
+
   @override
   String get configurationName => 'Typescript';
 
@@ -57,7 +69,7 @@ class TypescriptConfiguration extends LanguageSpecificConfiguration {
 
   @override
   List<String> get reservedWords => ['yield', 'object'];
-  
+
   @override
   String methodName(String name) {
     return camelCase([name]);

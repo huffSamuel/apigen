@@ -238,15 +238,43 @@ class OpenApiPath {
 }
 
 @JsonSerializable()
+class OpenApiResponseObject {
+  final String description;
+  final Map<String, dynamic>? headers;
+  final Map<String, dynamic>? content;
+  final Map<String, dynamic>? links;
+
+  OpenApiResponseObject({
+    required this.description,
+    required this.headers,
+    required this.content,
+    required this.links,
+  });
+
+  factory OpenApiResponseObject.fromJson(Map<String, dynamic> json) =>
+      _$OpenApiResponseObjectFromJson(json);
+}
+
+typedef ResponseValueType
+    = Tuple<OpenApiReferenceSchema, OpenApiResponseObject>;
+typedef ParametersType = Tuple<OpenApiReferenceSchema, OpenApiParameter>;
+typedef RequestBodyValueType
+    = Tuple<OpenApiReferenceSchema, OpenApiRequestBody>;
+
+@JsonSerializable()
 class OpenApiOperation {
   final List<String>? tags;
   final String? summary;
   final String? description;
   final OpenApiExternalDocumentation? externalDocs;
   final String? operationId;
-  final dynamic parameters;
-  final dynamic requestBody;
-  final dynamic responses;
+  @JsonKey(fromJson: _parametersFromJson)
+  final List<ParametersType>? parameters;
+  @JsonKey(fromJson: _requestBodyFromJson)
+  final RequestBodyValueType? requestBody;
+  @JsonKey(fromJson: _responsesFromJson)
+  final Map<String, ResponseValueType>? responses;
+  // TODO: Define a type for callbacks https://swagger.io/specification/#callback-object
   final Map<String, dynamic>? callbacks;
   final bool? deprecated;
   final List<OpenApiSecurityRequirement>? security;
@@ -269,6 +297,57 @@ class OpenApiOperation {
 
   factory OpenApiOperation.fromJson(Map<String, dynamic> json) =>
       _$OpenApiOperationFromJson(json);
+
+  static RequestBodyValueType? _requestBodyFromJson(
+      Map<String, dynamic>? json) {
+    if (json == null) {
+      return null;
+    }
+
+    return Tuple.fromJson(
+      OpenApiReferenceSchema.fromJson,
+      OpenApiRequestBody.fromJson,
+      json,
+    );
+  }
+
+  static List<ParametersType>? _parametersFromJson(Iterable<dynamic>? json) {
+    List<ParametersType> m = [];
+
+    if (json == null) {
+      return null;
+    }
+
+    for (var entry in json) {
+      m.add(Tuple.fromJson(
+        OpenApiReferenceSchema.fromJson,
+        OpenApiParameter.fromJson,
+        entry as Map<String, dynamic>,
+      ));
+    }
+
+    return m;
+  }
+
+  static Map<String, ResponseValueType>? _responsesFromJson(
+    Map<String, dynamic>? json,
+  ) {
+    final m = <String, ResponseValueType>{};
+
+    if (json == null) {
+      return null;
+    }
+
+    for (var entry in json.entries) {
+      m[entry.key] = Tuple.fromJson(
+        OpenApiReferenceSchema.fromJson,
+        OpenApiResponseObject.fromJson,
+        entry.value as Map<String, dynamic>,
+      );
+    }
+
+    return m;
+  }
 }
 
 @JsonSerializable()
@@ -298,7 +377,10 @@ class OpenApiComponents {
 
   @JsonKey(fromJson: _linksFromJson)
   final Map<String, Tuple<OpenApiLink, OpenApiReference>>? links;
+  // TODO: Define a callback type: https://swagger.io/specification/#callback-object
   final Map<String, dynamic>? callbacks;
+
+  // TODO: Define a path item type: https://swagger.io/specification/#path-item-object
   final Map<String, dynamic>? pathItems;
 
   OpenApiComponents({
@@ -546,23 +628,42 @@ class OpenApiRequestBody {
 class OpenApiParameter {
   final String name;
   @JsonKey(name: 'in')
-  final String input;
+  final String location;
   final String? description;
   final bool? required;
-  final bool deprecated;
-  final bool allowEmptyValue;
+  final bool? deprecated;
+  final bool? allowEmptyValue;
+  final String? style;
+  final bool? explode;
+  final bool? allowReserved;
+  @JsonKey(fromJson: _schemaFromJson)
+  final Tuple<OpenApiSchema, CompositeSchema>? schema;
 
   OpenApiParameter({
     required this.name,
-    required this.input,
+    required this.location,
     this.description,
     this.required,
     required this.deprecated,
     required this.allowEmptyValue,
+    this.style,
+    this.explode,
+    this.allowReserved,
+    this.schema,
   });
 
   factory OpenApiParameter.fromJson(Map<String, dynamic> json) =>
       _$OpenApiParameterFromJson(json);
+
+  static Tuple<OpenApiSchema, CompositeSchema> _schemaFromJson(
+    Map<String, dynamic> json,
+  ) {
+    return Tuple.fromJson(
+      OpenApiSchema.fromJson,
+      CompositeSchema.fromJson,
+      json,
+    );
+  }
 }
 
 @JsonSerializable()

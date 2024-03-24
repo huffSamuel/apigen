@@ -16,7 +16,78 @@ class SchemaTypes {
   static const nullType = 'null';
 }
 
-abstract class OpenApiSchema {
+sealed class Schema {
+  bool isComposite = false;
+
+  Schema();
+
+  factory Schema.fromJson(JsonMap json) {
+    try {
+      return CompositeSchema.fromJson(json);
+    } catch (err) {
+      // NOP
+    }
+
+    return OpenApiSchema.fromJson(json);
+  }
+}
+
+
+  class CompositeSchema extends Schema {
+  @override
+  bool get isComposite => true;
+
+  final List<OpenApiSchema> schemas;
+  CompositeSchema(this.schemas);
+
+  factory CompositeSchema.fromJson(JsonMap json) {
+    if (json['anyOf'] != null) {
+      return AnyOfSchema.fromJson(json);
+    }
+
+    if (json['allOf'] != null) {
+      return AllOfSchema.fromJson(json);
+    }
+
+    if (json['oneOf'] != null) {
+      return OneOfSchema.fromJson(json);
+    }
+
+    throw 'Unsupported composite schema: ${json}';
+  }
+}
+
+class OneOfSchema extends CompositeSchema {
+  OneOfSchema(super.schemas);
+
+  factory OneOfSchema.fromJson(Map<String, dynamic> json) =>
+      OneOfSchema((json['oneOf'] as Iterable<dynamic>)
+          .map((x) => OpenApiSchema.fromJson(x))
+          .toList());
+}
+
+class AnyOfSchema extends CompositeSchema {
+  AnyOfSchema(super.schemas);
+
+  factory AnyOfSchema.fromJson(Map<String, dynamic> json) =>
+      AnyOfSchema((json['anyOf'] as Iterable<dynamic>)
+          .map((x) => OpenApiSchema.fromJson(x))
+          .toList());
+}
+
+class AllOfSchema extends CompositeSchema {
+  AllOfSchema(super.schemas);
+
+  factory AllOfSchema.fromJson(Map<String, dynamic> json) =>
+      AllOfSchema((json['allOf'] as Iterable<dynamic>)
+          .map((x) => OpenApiSchema.fromJson(x))
+          .toList());
+}
+
+sealed class OpenApiSchema extends Schema {
+  @override
+  bool get isComposite => false;
+  
   /// A short description of the purpose of the data described by the schema.
   final String? title;
 
@@ -87,7 +158,7 @@ abstract class OpenApiSchema {
           return OpenApiReferenceSchema.fromJson(json);
         }
 
-        print('[ERROR]: Unsupported type ${json['type']}');
+        // TODO: This is either a poorly formatted JSON or it is a composite schema
         throw 'Unsupported type ${json['type']}';
     }
   }

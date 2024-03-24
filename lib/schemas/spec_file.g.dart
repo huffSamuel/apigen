@@ -134,6 +134,15 @@ OpenApiPath _$OpenApiPathFromJson(Map<String, dynamic> json) => OpenApiPath(
       parameters: json['parameters'] as List<dynamic>?,
     );
 
+OpenApiResponseObject _$OpenApiResponseObjectFromJson(
+        Map<String, dynamic> json) =>
+    OpenApiResponseObject(
+      description: json['description'] as String,
+      headers: json['headers'] as Map<String, dynamic>?,
+      content: json['content'] as Map<String, dynamic>?,
+      links: json['links'] as Map<String, dynamic>?,
+    );
+
 OpenApiOperation _$OpenApiOperationFromJson(Map<String, dynamic> json) =>
     OpenApiOperation(
       tags: (json['tags'] as List<dynamic>?)?.map((e) => e as String).toList(),
@@ -144,9 +153,12 @@ OpenApiOperation _$OpenApiOperationFromJson(Map<String, dynamic> json) =>
           : OpenApiExternalDocumentation.fromJson(
               json['externalDocs'] as Map<String, dynamic>),
       operationId: json['operationId'] as String?,
-      parameters: json['parameters'],
-      requestBody: json['requestBody'],
-      responses: json['responses'],
+      parameters:
+          OpenApiOperation._parametersFromJson(json['parameters'] as List?),
+      requestBody: OpenApiOperation._requestBodyFromJson(
+          json['requestBody'] as Map<String, dynamic>?),
+      responses: OpenApiOperation._responsesFromJson(
+          json['responses'] as Map<String, dynamic>?),
       callbacks: json['callbacks'] as Map<String, dynamic>?,
       deprecated: json['deprecated'] as bool?,
       security: (json['security'] as List<dynamic>?)
@@ -228,11 +240,16 @@ OpenApiRequestBody _$OpenApiRequestBodyFromJson(Map<String, dynamic> json) =>
 OpenApiParameter _$OpenApiParameterFromJson(Map<String, dynamic> json) =>
     OpenApiParameter(
       name: json['name'] as String,
-      input: json['in'] as String,
+      location: json['in'] as String,
       description: json['description'] as String?,
       required: json['required'] as bool?,
-      deprecated: json['deprecated'] as bool,
-      allowEmptyValue: json['allowEmptyValue'] as bool,
+      deprecated: json['deprecated'] as bool?,
+      allowEmptyValue: json['allowEmptyValue'] as bool?,
+      style: json['style'] as String?,
+      explode: json['explode'] as bool?,
+      allowReserved: json['allowReserved'] as bool?,
+      schema: OpenApiParameter._schemaFromJson(
+          json['schema'] as Map<String, dynamic>),
     );
 
 OpenApiExample _$OpenApiExampleFromJson(Map<String, dynamic> json) =>
