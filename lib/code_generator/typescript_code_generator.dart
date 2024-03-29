@@ -20,9 +20,19 @@ import fetch from 'isomorphic-unfetch';
 export class BaseApi {
   baseUrl = '';
 
-  get(req: { path: string }) {
-    fetch(this.baseUrl + req.path, {
-      method: 'get',
+  send(method: string, req: { path: string; query?: Record<string, string | number | boolean> }) {
+    let url = this.baseUrl + req.path;
+
+    if (req.query) {
+      url += '?';
+
+      for (const q in req.query) {
+        url += `\${encodeURIComponent(q)}=\${encodeURIComponent(req.query[q])}`;
+      }
+    }
+
+    fetch(url, {
+      method,
     });
   }
 }
@@ -190,19 +200,27 @@ export class ${n.typeName} {
 ${description(m.description)}
 ${m.name}(${m.parameters.map((x) => x.name + ': ' + x.type).join(', ')}) {
   ${path(m.path, m.parameters)}
-  this.api.${m.method}({path});
+  this.api.send('${m.method}', {path, query: {${m.parameters.where((x) => x.location == 'query').map((x) => x.name).join(',')}}});
 }
 ''';
   }
 
   String path(String path, List<ParamDecl> params) {
-    var sb = StringBuffer('const path = \'$path\'');
+    var sb = StringBuffer('let path = \'$path\'');
 
-    for (final pathParam in params.where((x) => x.location == 'path')) {
-      sb.write('.replace(\'{${pathParam.name}}\', ${pathParam.name})');
+    final pathParams = params.where((x) => x.location == 'path');
+
+    if (pathParams.isEmpty) {
+      return sb.toString();
     }
 
-    sb.write(';');
+    sb.write('\nconst pathParams={');
+    sb.write(pathParams.map((x) => x.name).join(','));
+    sb.writeln('};');
+
+    sb.write(
+      'for (const p in pathParams) { path = path.replace(`{\${p}}`, pathParams[p]);}',
+    );
 
     return sb.toString();
   }
