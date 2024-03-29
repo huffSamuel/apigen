@@ -131,7 +131,7 @@ OpenApiPath _$OpenApiPathFromJson(Map<String, dynamic> json) => OpenApiPath(
       servers: (json['servers'] as List<dynamic>?)
           ?.map((e) => OpenApiServer.fromJson(e as Map<String, dynamic>))
           .toList(),
-      parameters: json['parameters'] as List<dynamic>?,
+      parameters: _parametersFromJson(json['parameters'] as List?),
     );
 
 OpenApiResponseObject _$OpenApiResponseObjectFromJson(
@@ -153,8 +153,7 @@ OpenApiOperation _$OpenApiOperationFromJson(Map<String, dynamic> json) =>
           : OpenApiExternalDocumentation.fromJson(
               json['externalDocs'] as Map<String, dynamic>),
       operationId: json['operationId'] as String?,
-      parameters:
-          OpenApiOperation._parametersFromJson(json['parameters'] as List?),
+      parameters: _parametersFromJson(json['parameters'] as List?),
       requestBody: OpenApiOperation._requestBodyFromJson(
           json['requestBody'] as Map<String, dynamic>?),
       responses: OpenApiOperation._responsesFromJson(

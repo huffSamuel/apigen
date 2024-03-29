@@ -6,6 +6,10 @@ String camelCase(List<String> parts) {
       .fold(parts[0], (a, b) => a + b[0].toUpperCase() + b.substring(1));
 }
 
+// TODO: CLI Options
+// [] - install dependencies
+// [] - format code (must install dependencies or have prettier available)
+
 class TypescriptConfiguration extends LanguageSpecificConfiguration {
   // This is type AllOfType = A & B & C;
   @override

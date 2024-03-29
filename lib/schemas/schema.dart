@@ -17,6 +17,7 @@ class SchemaTypes {
 }
 
 sealed class Schema {
+  @JsonKey(includeFromJson: false)
   bool isComposite = false;
 
   Schema();
@@ -32,8 +33,8 @@ sealed class Schema {
   }
 }
 
-
-  class CompositeSchema extends Schema {
+class CompositeSchema extends Schema {
+  @JsonKey(includeFromJson: false)
   @override
   bool get isComposite => true;
 
@@ -85,9 +86,10 @@ class AllOfSchema extends CompositeSchema {
 }
 
 sealed class OpenApiSchema extends Schema {
+  @JsonKey(includeFromJson: false)
   @override
   bool get isComposite => false;
-  
+
   /// A short description of the purpose of the data described by the schema.
   final String? title;
 

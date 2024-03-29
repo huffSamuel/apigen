@@ -1,7 +1,32 @@
 import 'dart:io';
 
+import '../syntax/param_node.dart';
+
 import '../syntax/method_node.dart';
 import '../syntax/node.dart';
+
+const package = '''
+{
+  "dependencies": {
+    "isomorphic-unfetch": "^4.0.2"
+  }
+}
+
+''';
+
+const api = '''
+import fetch from 'isomorphic-unfetch';
+
+export class BaseApi {
+  baseUrl = '';
+
+  get(req: { path: string }) {
+    fetch(this.baseUrl + req.path, {
+      method: 'get',
+    });
+  }
+}
+''';
 
 const helper = '''export const value = <T>(
   json: any,
@@ -74,7 +99,11 @@ class DeserializedValue<T> {
 // call needs to try to call `fromJson()` on that generic type
 
 class TypescriptCodeGenerator {
-  Map<String, String> additionalFiles = {'util/helper.ts': helper};
+  Map<String, String> additionalFiles = {
+    'util/helper.ts': helper,
+    'package.json': package,
+    'api/api.ts': api
+  };
 
   generate(Iterable<Node> syntax) {
     // TODO: Don't split this into separate files. Since it's generated we want to
@@ -144,7 +173,11 @@ export enum ${n.typeName} {
 
   klass(ApiDeclNode n) {
     final source = '''
+import { BaseApi } from './api';
+
 export class ${n.typeName} {
+  constructor(private readonly api: BaseApi) {}
+
   ${n.methods.map((m) => kmethod(m)).join('\r\n  ')}
 }
 ''';
@@ -156,10 +189,22 @@ export class ${n.typeName} {
     return '''
 ${description(m.description)}
 ${m.name}(${m.parameters.map((x) => x.name + ': ' + x.type).join(', ')}) {
-  const path = '${m.path}';
-
+  ${path(m.path, m.parameters)}
+  this.api.${m.method}({path});
 }
 ''';
+  }
+
+  String path(String path, List<ParamDecl> params) {
+    var sb = StringBuffer('const path = \'$path\'');
+
+    for (final pathParam in params.where((x) => x.location == 'path')) {
+      sb.write('.replace(\'{${pathParam.name}}\', ${pathParam.name})');
+    }
+
+    sb.write(';');
+
+    return sb.toString();
   }
 
   kinterface(TypeDeclNode n) {

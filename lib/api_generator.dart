@@ -20,7 +20,7 @@ class ApiGenerator {
     var schemaText = jsonDecode(await File(schemaPath).readAsString());
     var schema = OpenApi.fromJson(schemaText);
 
-    final create = ['./out/dto', './out/api'];
+    final create = ['./out', './out/dto', './out/api'];
 
     for (final c in create) {
       final out = Directory(c);
@@ -239,12 +239,43 @@ class ApiBuilder {
 
     if (schema.paths?.paths != null) {
       for (final path in schema.paths!.paths!.entries) {
+        List<ParamDecl> commonParams = [];
+
+        if (path.value.parameters?.isNotEmpty == true) {
+          for (final (index, param) in path.value.parameters!.indexed) {
+            final p = ParamDecl('${path.key}.$index');
+            
+            if (param.a != null) {
+              // TODO: Pull a reference out of the pre-processed parameters
+              print('[INFO]: Get this reference from schema.components.parameters');
+              p.type = 'dynamic';
+            } else if (param.b != null) {
+              p.schema = param.b!;
+
+              if (param.b?.schema?.a?.type != null) {
+                p.type = config.typeName(param.b!.schema!.a!.type!);
+              } else {
+                // TODO: Handle composite schemas, likely by generating a new typedef
+                print('[INFO]: This is a composite schema which we cannot process yet');
+                p.type = 'dynamic';
+              }
+            } else {
+              print('[ERROR] Unprocessable parameter');
+              continue;
+            }
+
+            commonParams.add(p);
+          }
+        }
+
         // TODO: Common parameters are defined here.
 
         for (final operation in operations(path.value).entries) {
           final node = MethodNode(operation.key, operation.value);
           node.name = methodName(operation.value.operationId!);
           node.path = path.key;
+          node.method = operation.key;
+          node.parameters.addAll(commonParams);
 
           if (operation.value.parameters?.isNotEmpty == true) {
             for (final (index, param) in operation.value.parameters!.indexed) {

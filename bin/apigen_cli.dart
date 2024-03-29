@@ -34,5 +34,5 @@ void main(List<String> arguments) {
   final ArgParser argParser = buildParser();
 
   final apiGenerator = ApiGenerator();
-  apiGenerator.generate('C:\\Users\\xsand\\src\\apigen\\apigen_cli\\spacetraders.json');
+  apiGenerator.generate('./spacetraders.json');
 }

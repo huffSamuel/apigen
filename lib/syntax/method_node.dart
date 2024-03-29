@@ -10,6 +10,7 @@ class MethodNode extends Node {
 
   late String name;
   late String path;
+  late String method;
 
   MethodNode(super.id, this.schema);
 

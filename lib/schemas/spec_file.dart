@@ -215,7 +215,8 @@ class OpenApiPath {
   final OpenApiOperation? patch;
   final OpenApiOperation? trace;
   final List<OpenApiServer>? servers;
-  final List<dynamic>? parameters;
+  @JsonKey(fromJson: _parametersFromJson)
+  final List<ParametersType>? parameters;
 
   OpenApiPath({
     this.ref,
@@ -309,24 +310,6 @@ class OpenApiOperation {
       OpenApiRequestBody.fromJson,
       json,
     );
-  }
-
-  static List<ParametersType>? _parametersFromJson(Iterable<dynamic>? json) {
-    List<ParametersType> m = [];
-
-    if (json == null) {
-      return null;
-    }
-
-    for (var entry in json) {
-      m.add(Tuple.fromJson(
-        OpenApiReferenceSchema.fromJson,
-        OpenApiParameter.fromJson,
-        entry as Map<String, dynamic>,
-      ));
-    }
-
-    return m;
   }
 
   static Map<String, ResponseValueType>? _responsesFromJson(
@@ -755,4 +738,22 @@ class OpenApiReference {
 
   factory OpenApiReference.fromJson(Map<String, dynamic> json) =>
       _$OpenApiReferenceFromJson(json);
+}
+
+List<ParametersType>? _parametersFromJson(Iterable<dynamic>? json) {
+  List<ParametersType> m = [];
+
+  if (json == null) {
+    return null;
+  }
+
+  for (var entry in json) {
+    m.add(Tuple.fromJson(
+      OpenApiReferenceSchema.fromJson,
+      OpenApiParameter.fromJson,
+      entry as Map<String, dynamic>,
+    ));
+  }
+
+  return m;
 }
