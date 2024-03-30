@@ -32,8 +32,12 @@ class ApiGenerator {
       out.createSync();
     }
 
-    cg.generate(s.build(schema));
-    cg.generate(a.build(schema));
+    var syntax = Syntax();
+    syntax = s.build(schema, syntax);
+    syntax = a.build(schema, syntax);
+
+    cg.generate(syntax.types.values);
+    cg.generate(syntax.apis.values);
   }
 }
 
@@ -41,6 +45,11 @@ class ApiGenerator {
 // --output, -o <path>
 // --schema, -s <path>
 // --format, -f [format...]
+
+class Syntax {
+  final Map<String, TypeDeclNode> types = {};
+  final Map<String, ApiDeclNode> apis = {};
+}
 
 class SyntaxBuilder {
   final LanguageSpecificConfiguration config;
@@ -140,20 +149,19 @@ class SyntaxBuilder {
     return t;
   }
 
-  List<Node> build(
+  Syntax build(
     OpenApi schema,
+    Syntax syntax,
   ) {
-    Map<String, TypeDeclNode> syntax = {};
-
     if (schema.components != null) {
       for (final e in schema.components!.schemas.entries) {
         switch (e.value) {
           case final OpenApiObjectSchema obj:
-            syntax[e.key] = type(e.key, obj);
+            syntax.types[e.key] = type(e.key, obj);
             break;
           default:
             if (e.value.enumValues?.isNotEmpty == true) {
-              syntax[e.key] = enums(e.key, e.value);
+              syntax.types[e.key] = enums(e.key, e.value);
             } else {
               final t = TypeDeclNode(e.key, e.value);
               t.typeName = config.typeName(e.key);
@@ -161,7 +169,7 @@ class SyntaxBuilder {
               t.isTypedef = true;
               t.typedef = e.value.type!;
 
-              syntax[e.key] = t;
+              syntax.types[e.key] = t;
             }
 
             break;
@@ -169,14 +177,14 @@ class SyntaxBuilder {
       }
     }
 
-    for (final t in syntax.values) {
+    for (final t in syntax.types.values) {
       for (final p in t.properties) {
         if (p.typeReference == null) {
           continue;
         }
 
         // Find the matching type decl
-        final type = syntax.values
+        final type = syntax.types.values
             .singleWhere((element) => element.id == p.typeReference);
 
         // And complete the referenced information.
@@ -194,25 +202,25 @@ class SyntaxBuilder {
     // CONSIDER: Is this the best option? Or should they be kept within the source code
     // files for the type they are nested underneath?
     final typesWithDecls =
-        syntax.values.where((x) => x.typeDecls.isNotEmpty).toList();
+        syntax.types.values.where((x) => x.typeDecls.isNotEmpty).toList();
 
     for (final typeWithDecls in typesWithDecls) {
       for (final c in typeWithDecls.typeDecls) {
         // Find the property associated with the decl
         final p = typeWithDecls.properties.singleWhere((x) => x.id == c.id);
 
-        if (syntax.containsKey(c.id)) {
+        if (syntax.types.containsKey(c.id)) {
           c.typeName = config.className(typeWithDecls.typeName + c.typeName);
           c.fileName = config.fileName(c.typeName);
         }
 
         p.type = c.typeName;
-        syntax[c.typeName] = c;
+        syntax.types[c.typeName] = c;
         typeWithDecls.references[c.fileName] = Set.from([c.typeName]);
       }
     }
 
-    return syntax.values.toList();
+    return syntax;
   }
 }
 
@@ -227,15 +235,12 @@ class ApiBuilder {
     return config.methodName(parts);
   }
 
-  Iterable<Node> build(OpenApi schema) {
-    final Map<String, ApiDeclNode> apis = {
+  Syntax build(OpenApi schema, Syntax syntax) {
+    syntax.apis.addAll({
       'Default': ApiDeclNode('DefaultApi')
         ..typeName = config.typeName('DefaultApi')
         ..fileName = config.fileName('DefaultApi'),
-    };
-
-    // TODO: pre-process path items for reference params
-    // schema.components.parameters;
+    });
 
     if (schema.paths?.paths != null) {
       for (final path in schema.paths!.paths!.entries) {
@@ -244,10 +249,11 @@ class ApiBuilder {
         if (path.value.parameters?.isNotEmpty == true) {
           for (final (index, param) in path.value.parameters!.indexed) {
             final p = ParamDecl('${path.key}.$index');
-            
+
             if (param.a != null) {
               // TODO: Pull a reference out of the pre-processed parameters
-              print('[INFO]: Get this reference from schema.components.parameters');
+              print(
+                  '[INFO]: Get this reference from schema.components.parameters');
               p.type = 'dynamic';
             } else if (param.b != null) {
               p.schema = param.b!;
@@ -256,7 +262,8 @@ class ApiBuilder {
                 p.type = config.typeName(param.b!.schema!.a!.type!);
               } else {
                 // TODO: Handle composite schemas, likely by generating a new typedef
-                print('[INFO]: This is a composite schema which we cannot process yet');
+                print(
+                    '[INFO]: This is a composite schema which we cannot process yet');
                 p.type = 'dynamic';
               }
             } else {
@@ -267,8 +274,6 @@ class ApiBuilder {
             commonParams.add(p);
           }
         }
-
-        // TODO: Common parameters are defined here.
 
         for (final operation in operations(path.value).entries) {
           final node = MethodNode(operation.key, operation.value);
@@ -284,18 +289,41 @@ class ApiBuilder {
               if (param.a != null) {
                 // TODO: Pull a reference out of the pre-processed parameters
                 print(
-                    '[INFO]: Get this reference from schema.components.parameters');
-                p.type = 'dynamic';
+                  '[INFO]: Get this reference from schema.components.parameters',
+                );
+                p.type = config.anyType();
               } else if (param.b != null) {
                 p.schema = param.b!;
 
-                if (param.b?.schema?.a?.type != null) {
-                  p.type = config.typeName(param.b!.schema!.a!.type!);
+                if (param.b?.schema?.a != null) {
+                  switch (param.b!.schema!.a!) {
+                    case OpenApiReferenceSchema ref:
+                      final t = syntax.types[
+                          ref.ref.substring(ref.ref.lastIndexOf('/') + 1)]!;
+                      // TODO: Add a reference to the source file
+                      p.type = t.typeName;
+                      break;
+                    default:
+                      final r = param.b!.schema!.a!;
+
+                      if (r.type != null) {
+                        p.type = config.typeName(r.type!);
+                      } else {
+                        print(
+                          '[ERROR]: Unprocessable parameter - ${operation.value.operationId} parameter $index',
+                        );
+                        p.type = config.anyType();
+                      }
+                      break;
+                  }
                 } else {
-                  // TODO: Handle composite schemas, likely by generating a new typedef
+                  // Hand this off to the language config. It either needs to modify the generated syntax with a new composite type
+                  // and assign the referenced type OR it needs to assign the any type, if supported. If the language can't support
+                  // composites or anys, /shrug?
                   print(
-                      '[INFO]: This is a composite schema which we cannot process yet');
-                  p.type = 'dynamic';
+                    '[INFO]: This is a composite schema which we cannot process yet',
+                  );
+                  p.type = config.anyType();
                 }
               } else {
                 print(
@@ -307,9 +335,6 @@ class ApiBuilder {
             }
           }
 
-          // TODO: If any param schemas are a composite type that hasn't already been built, we need to build a new type for that composite.
-          // This type needs to be flagged as a composite and the language configuration will determine if it can be written as a composite or if it needs to be a dynamic object.
-
           // TODO: Add requestbodies to the known typedecls
           // TODO: Add the request bodies to the method node so it knows how to generate a request
 
@@ -319,21 +344,21 @@ class ApiBuilder {
           // TODO: Handle security
 
           if (operation.value.tags?.isEmpty == true) {
-            apis['Default']!.methods.add(node);
+            syntax.apis['Default']!.methods.add(node);
           } else {
             for (final at in operation.value.tags!) {
-              apis.putIfAbsent(
+              syntax.apis.putIfAbsent(
                   at,
                   () => ApiDeclNode('${at}Api')
                     ..typeName = config.typeName('${at}Api')
                     ..fileName = config.fileName('${at}Api'));
-              apis[at]!.methods.add(node);
+              syntax.apis[at]!.methods.add(node);
             }
           }
         }
       }
     }
-    return apis.values;
+    return syntax;
   }
 
   Map<String, OpenApiOperation> operations(OpenApiPath path) {

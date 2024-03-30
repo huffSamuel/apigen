@@ -33,6 +33,11 @@ class TypescriptConfiguration extends LanguageSpecificConfiguration {
       };
 
   @override
+  String anyType() {
+    return 'any';
+  }
+
+  @override
   String className(String name) {
     return typeName(name[0].toUpperCase() + name.substring(1));
   }
