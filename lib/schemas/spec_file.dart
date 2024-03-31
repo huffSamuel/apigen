@@ -242,7 +242,7 @@ class OpenApiPath {
 class OpenApiResponseObject {
   final String description;
   final Map<String, dynamic>? headers;
-  final Map<String, dynamic>? content;
+  final Map<String, OpenApiMediaType>? content;
   final Map<String, dynamic>? links;
 
   OpenApiResponseObject({

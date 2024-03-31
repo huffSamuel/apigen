@@ -28,9 +28,6 @@ class PropertyNode extends Node {
   // If set, this property's [type] is a typedef.
   bool isTypedef = false;
 
-  /// If set, this type is defined by the API.
-  bool apiType = false;
-
   /// If set, this type is an enum
   bool isEnumType = false;
 

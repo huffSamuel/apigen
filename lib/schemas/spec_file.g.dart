@@ -139,7 +139,10 @@ OpenApiResponseObject _$OpenApiResponseObjectFromJson(
     OpenApiResponseObject(
       description: json['description'] as String,
       headers: json['headers'] as Map<String, dynamic>?,
-      content: json['content'] as Map<String, dynamic>?,
+      content: (json['content'] as Map<String, dynamic>?)?.map(
+        (k, e) =>
+            MapEntry(k, OpenApiMediaType.fromJson(e as Map<String, dynamic>)),
+      ),
       links: json['links'] as Map<String, dynamic>?,
     );
 
