@@ -69,7 +69,13 @@ TypeDeclNode responseType(
 
   for (final p in obj.properties.entries) {
     // TODO: This needs to separate propertyName and typeName
-    final prop = property(config.className(camelCase([name, p.key])), p.value, t, config);
+    final prop = property(
+      config.className(camelCase([name, p.key])),
+      p.value,
+      t,
+      config,
+    );
+    prop.name = p.key;
     prop.required = obj.required.contains(p.key);
     t.properties.add(prop);
   }
@@ -95,6 +101,8 @@ TypeDeclNode type(
   return t;
 }
 
+// TODO: This needs direct access to syntax so it can continue to process sub-object/array nodes
+// Without an additional pass through the entire tree.
 PropertyNode property(
   String name,
   OpenApiSchema schema,
@@ -329,7 +337,7 @@ class ApiBuilder {
                 );
                 syntax.types[className] = t;
 
-                if(t.typeDecls.isNotEmpty) {
+                if (t.typeDecls.isNotEmpty) {
                   for (final c in t.typeDecls) {
                     final p = t.properties.singleWhere((x) => x.id == c.id);
 
