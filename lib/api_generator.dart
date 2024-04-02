@@ -58,6 +58,25 @@ String referenceName(OpenApiReferenceSchema ref) {
   return ref.ref.substring(ref.ref.lastIndexOf('/') + 1);
 }
 
+TypeDeclNode responseType(
+  String name,
+  OpenApiObjectSchema obj,
+  LanguageSpecificConfiguration config,
+) {
+  final t = TypeDeclNode(name, obj);
+  t.typeName = config.typeName(name);
+  t.fileName = config.fileName(name);
+
+  for (final p in obj.properties.entries) {
+    // TODO: This needs to separate propertyName and typeName
+    final prop = property(config.className(camelCase([name, p.key])), p.value, t, config);
+    prop.required = obj.required.contains(p.key);
+    t.properties.add(prop);
+  }
+
+  return t;
+}
+
 TypeDeclNode type(
   String name,
   OpenApiObjectSchema obj,
@@ -100,6 +119,7 @@ PropertyNode property(
         case null:
           Log.warn(
               'This is likely a composite schema that we cannot handle at this time');
+          pr.type = config.anyType();
           break;
         default:
           pr.type = config.typeName(ray.items!.a!.type ?? 'unknown');
@@ -299,11 +319,30 @@ class ApiBuilder {
                   continue;
                 }
 
-                syntax.types[className] = type(
+                Log.info("Creating response type", [className]);
+                // This really needs to process the name of child properties as a type from the parent,
+                // e.g. NavigateShip200Response -> NavigateShip200ResponseData
+                final t = responseType(
                   className,
                   schema,
                   config,
                 );
+                syntax.types[className] = t;
+
+                if(t.typeDecls.isNotEmpty) {
+                  for (final c in t.typeDecls) {
+                    final p = t.properties.singleWhere((x) => x.id == c.id);
+
+                    if (syntax.types.containsKey(c.id)) {
+                      c.typeName = config.className(t.typeName + c.typeName);
+                      c.fileName = config.fileName(c.typeName);
+                    }
+
+                    p.type = c.typeName;
+                    syntax.types[c.typeName] = c;
+                    t.references[c.fileName] = Set.from([c.typeName]);
+                  }
+                }
               }
             }
           }
