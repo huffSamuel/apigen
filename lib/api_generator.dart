@@ -35,12 +35,12 @@ class ApiGenerator {
       out.createSync();
     }
 
-    var syntax = Syntax();
-    syntax = s.build(schema, syntax);
-    syntax = a.build(schema, syntax);
+    var generate = Generate();
+    generate = s.build(schema, generate);
+    generate = a.build(schema, generate);
 
-    cg.generate(syntax.types.values);
-    cg.generate(syntax.apis.values);
+    cg.generate(generate.types.values);
+    cg.generate(generate.apis.values);
   }
 }
 
@@ -49,7 +49,7 @@ class ApiGenerator {
 // --schema, -s <path>
 // --format, -f [format...]
 
-class Syntax {
+class Generate {
   final Map<String, TypeDeclNode> types = {};
   final Map<String, ApiDeclNode> apis = {};
 }
@@ -58,10 +58,11 @@ String referenceName(OpenApiReferenceSchema ref) {
   return ref.ref.substring(ref.ref.lastIndexOf('/') + 1);
 }
 
-TypeDeclNode responseType(
+void responseType(
   String name,
   OpenApiObjectSchema obj,
   LanguageSpecificConfiguration config,
+  Generate generate,
 ) {
   final t = TypeDeclNode(name, obj);
   t.typeName = config.typeName(name);
@@ -74,40 +75,47 @@ TypeDeclNode responseType(
       p.value,
       t,
       config,
+      generate,
     );
     prop.name = p.key;
     prop.required = obj.required.contains(p.key);
     t.properties.add(prop);
   }
 
-  return t;
+  generate.types[t.typeName] = t;
 }
 
-TypeDeclNode type(
+void type(
   String name,
   OpenApiObjectSchema obj,
   LanguageSpecificConfiguration config,
+  Generate generate,
 ) {
   final t = TypeDeclNode(name, obj);
   t.typeName = config.typeName(name);
   t.fileName = config.fileName(name);
 
   for (final p in obj.properties.entries) {
-    final prop = property(config.className(p.key), p.value, t, config);
+    final prop = property(
+      config.className(p.key),
+      p.value,
+      t,
+      config,
+      generate,
+    );
     prop.required = obj.required.contains(p.key);
     t.properties.add(prop);
   }
 
-  return t;
+  generate.types[name] = t;
 }
 
-// TODO: This needs direct access to syntax so it can continue to process sub-object/array nodes
-// Without an additional pass through the entire tree.
 PropertyNode property(
   String name,
   OpenApiSchema schema,
   TypeDeclNode t,
   LanguageSpecificConfiguration config,
+  Generate generate,
 ) {
   final pr = PropertyNode(name, schema);
   pr.name = config.propertyName(name);
@@ -122,7 +130,7 @@ PropertyNode property(
         case final OpenApiObjectSchema obj:
           pr.type = config.className(name);
           t.references.putOrAdd(config.fileName(name), name);
-          t.typeDecls.add(type(name, obj, config));
+          type(name, obj, config, generate);
           break;
         case null:
           Log.warn(
@@ -146,7 +154,12 @@ PropertyNode property(
     case final OpenApiObjectSchema obj:
       pr.type = config.className(name);
       t.references.putOrAdd(config.fileName(name), name);
-      t.typeDecls.add(type(name, obj, config));
+      type(
+        name,
+        obj,
+        config,
+        generate,
+      );
       break;
     default:
       pr.type = config.typeName(schema.type ?? 'unknown');
@@ -189,15 +202,15 @@ class SyntaxBuilder {
 
   SyntaxBuilder(this.config);
 
-  Syntax build(
+  Generate build(
     OpenApi schema,
-    Syntax syntax,
+    Generate syntax,
   ) {
     if (schema.components != null) {
       for (final e in schema.components!.schemas.entries) {
         switch (e.value) {
           case final OpenApiObjectSchema obj:
-            syntax.types[e.key] = type(e.key, obj, config);
+            type(e.key, obj, config, syntax);
             break;
           default:
             if (e.value.enumValues?.isNotEmpty == true) {
@@ -275,7 +288,7 @@ class ApiBuilder {
     return config.methodName(parts);
   }
 
-  Syntax build(OpenApi schema, Syntax syntax) {
+  Generate build(OpenApi schema, Generate syntax) {
     syntax.apis.addAll({
       'Default': ApiDeclNode('DefaultApi')
         ..typeName = config.typeName('DefaultApi')
@@ -330,27 +343,12 @@ class ApiBuilder {
                 Log.info("Creating response type", [className]);
                 // This really needs to process the name of child properties as a type from the parent,
                 // e.g. NavigateShip200Response -> NavigateShip200ResponseData
-                final t = responseType(
+                responseType(
                   className,
                   schema,
                   config,
+                  syntax,
                 );
-                syntax.types[className] = t;
-
-                if (t.typeDecls.isNotEmpty) {
-                  for (final c in t.typeDecls) {
-                    final p = t.properties.singleWhere((x) => x.id == c.id);
-
-                    if (syntax.types.containsKey(c.id)) {
-                      c.typeName = config.className(t.typeName + c.typeName);
-                      c.fileName = config.fileName(c.typeName);
-                    }
-
-                    p.type = c.typeName;
-                    syntax.types[c.typeName] = c;
-                    t.references[c.fileName] = Set.from([c.typeName]);
-                  }
-                }
               }
             }
           }
@@ -387,7 +385,7 @@ class ApiBuilder {
 
   ParamDecl parameter(
     Tuple<OpenApiReferenceSchema, OpenApiParameter> param,
-    Syntax syntax,
+    Generate syntax,
     String id,
     int index,
   ) {
