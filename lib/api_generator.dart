@@ -230,22 +230,20 @@ class SyntaxBuilder {
       }
     }
 
+// This is a pass to complete the "ref" objects in the schema.
+// We don't have that information when we process the open api schema iteratively
+// so we need to loop back over all types and complete the information for any type
+// that was referenced after that type has been processed.
+//
+// There are ways to prevent this additional pass, but IMO any method is going to increase
+// complexity more than it's worth to just loop through all the objects again.
     for (final t in syntax.types.values) {
-      for (final p in t.properties) {
-        if (p.typeReference == null) {
-          continue;
-        }
-
+      for (final p
+          in t.properties.where((element) => element.typeReference != null)) {
         // Find the matching type decl
         final type = syntax.types.values
             .singleWhere((element) => element.id == p.typeReference);
 
-        // And complete the referenced information.
-        // Alternatively, we could push ever schema into a list and
-        // process it if it doesn't reference any other type. If it does, push it
-        // back into the end of the list for further processing. OR be cool kids
-        // and run through once to build a dependency graph and process types in that order...
-        // I think this is probably fine though.
         p.isEnumType = type.isEnum;
         p.isTypedef = type.isTypedef;
       }
@@ -310,6 +308,9 @@ class ApiBuilder {
             for (final entry in operation.value.responses!.entries) {
               final className =
                   config.className('${node.name}${entry.key}Response');
+              // TODO: Handle non-JSON response objects
+              // This will require application-wide enhancement to support multiple deserialization methods
+              // And probably helper classes for the target types that don't natively support non-JSON deserialization.
               if (entry.value.b?.content?['application/json'] != null) {
                 final schema =
                     entry.value.b!.content!['application/json']!.schema!;
@@ -319,8 +320,6 @@ class ApiBuilder {
                 }
 
                 Log.info("Creating response type", [className]);
-                // This really needs to process the name of child properties as a type from the parent,
-                // e.g. NavigateShip200Response -> NavigateShip200ResponseData
                 responseType(
                   className,
                   schema,
@@ -332,10 +331,24 @@ class ApiBuilder {
           }
 
           if (operation.value.requestBody != null) {
-            // TODO: Add requestbodies to the known typedecls
-            // TODO: Add the request bodies to the method node so it knows how to generate a request
+            if (operation.value.requestBody?.b != null) {
+              final className = config.className('${node.name}Request');
 
-            Log.info('adding request body');
+              if (operation
+                      .value.requestBody!.b!.content?['application/json'] !=
+                  null) {
+                final schema = operation
+                    .value.requestBody!.b!.content!['application/json']!.schema;
+
+                if (schema is! OpenApiObjectSchema) {
+                  continue;
+                }
+
+                Log.info("Creating request body type", [className]);
+                responseType(className, schema, config, syntax);
+                // TODO: This needs to add the request body as a parameter of the method
+              }
+            }
           }
 
           if (operation.value.security?.isNotEmpty == true) {
