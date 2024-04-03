@@ -54,7 +54,7 @@ class CompositeSchema extends Schema {
       return OneOfSchema.fromJson(json);
     }
 
-    throw 'Unsupported composite schema: ${json}';
+    throw 'Unsupported composite schema: $json';
   }
 }
 
@@ -160,7 +160,6 @@ sealed class OpenApiSchema extends Schema {
           return OpenApiReferenceSchema.fromJson(json);
         }
 
-        // TODO: This is either a poorly formatted JSON or it is a composite schema
         throw 'Unsupported type ${json['type']}';
     }
   }

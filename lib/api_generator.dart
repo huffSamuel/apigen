@@ -251,28 +251,6 @@ class SyntaxBuilder {
       }
     }
 
-    // Any object or enum schemas nested within another type get promoted to a full type here
-    // CONSIDER: Is this the best option? Or should they be kept within the source code
-    // files for the type they are nested underneath?
-    final typesWithDecls =
-        syntax.types.values.where((x) => x.typeDecls.isNotEmpty).toList();
-
-    for (final typeWithDecls in typesWithDecls) {
-      for (final c in typeWithDecls.typeDecls) {
-        // Find the property associated with the decl
-        final p = typeWithDecls.properties.singleWhere((x) => x.id == c.id);
-
-        if (syntax.types.containsKey(c.id)) {
-          c.typeName = config.className(typeWithDecls.typeName + c.typeName);
-          c.fileName = config.fileName(c.typeName);
-        }
-
-        p.type = c.typeName;
-        syntax.types[c.typeName] = c;
-        typeWithDecls.references[c.fileName] = Set.from([c.typeName]);
-      }
-    }
-
     return syntax;
   }
 }
