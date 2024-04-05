@@ -7,10 +7,20 @@ abstract class Node {
   Node(this.id);
 }
 
+String? _description(OpenApiSchema? schema) {
+  if (schema == null ||
+      schema.description == null ||
+      schema.description!.trim().isEmpty) {
+    return null;
+  }
+
+  return schema.description!.trim();
+}
+
 class PropertyNode extends Node {
   final OpenApiSchema schema;
 
-  String? get description => schema.description?.trim();
+  String? get description => _description(schema);
 
   late String name;
   late String type;
@@ -19,24 +29,13 @@ class PropertyNode extends Node {
   bool get readonly => schema.readOnly ?? false;
   bool get isArray => schema is OpenApiArraySchema;
 
-  /// If set, this property referenced a type that had not yet been identified and
-  /// needs to be finished at a later time.
-  ///
-  /// This assists in identifying enums.
-  String? typeReference;
-
   // If set, this property's [type] is a typedef.
   bool isTypedef = false;
-
-  /// If set, this type is an enum
-  bool isEnumType = false;
 
   PropertyNode(super.id, this.schema);
 }
 
 class EnumValueDecl extends Node {
-  String? description;
-
   late String typeName;
   late dynamic value;
   late String name;
@@ -51,11 +50,10 @@ class TypeDeclNode extends Node {
   bool isTypedef = false;
   String typedef = '';
 
-  String? get description => schema?.description?.trim();
+  String? get description => _description(schema);
 
   final OpenApiSchema? schema;
   final List<PropertyNode> properties = [];
-  final List<TypeDeclNode> typeDecls = [];
   final Map<String, Set<String>> references = {};
   final List<MethodNode> methods = [];
 
@@ -77,7 +75,7 @@ class ApiDeclNode extends Node {
   bool isTypedef = false;
   String typedef = '';
 
-  String? get description => schema?.description?.trim();
+  String? get description => _description(schema);
 
   final OpenApiSchema? schema;
   final Map<String, Set<String>> references = {};

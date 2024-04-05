@@ -5,6 +5,10 @@ import 'schema.dart';
 
 part 'spec_file.g.dart';
 
+abstract interface class HasContent {
+  Map<String, OpenApiMediaType>? get content;
+}
+
 @JsonSerializable()
 class OpenApi {
   /// The version number of the OpenAPI specification that the OpenAPI document uses.
@@ -239,7 +243,7 @@ class OpenApiPath {
 }
 
 @JsonSerializable()
-class OpenApiResponseObject {
+class OpenApiResponseObject implements HasContent {
   final String description;
   final Map<String, dynamic>? headers;
   final Map<String, OpenApiMediaType>? content;
@@ -592,7 +596,7 @@ class OpenApiHeader {
 }
 
 @JsonSerializable()
-class OpenApiRequestBody {
+class OpenApiRequestBody extends HasContent {
   final String? description;
   final Map<String, OpenApiMediaType>? content;
   final bool? required;
