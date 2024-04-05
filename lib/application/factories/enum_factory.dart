@@ -1,6 +1,6 @@
 part of 'factories.dart';
 
-TypeDeclNode enums(
+void enums(
   String name,
   OpenApiSchema obj,
   LanguageSpecificConfiguration config,
@@ -22,6 +22,4 @@ TypeDeclNode enums(
   }));
 
   safeAdd(generate, name, t);
-
-  return t;
 }

@@ -9,6 +9,7 @@ class ParamDecl extends Node {
   String get name => schema?.name ?? _name ?? 'unknown';
   set name(String value) => _name = value;
   String get location => schema?.location ?? 'unknown';
+  bool isArray = false;
 
   ParamDecl(super.id);
 }

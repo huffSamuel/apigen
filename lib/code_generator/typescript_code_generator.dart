@@ -20,15 +20,36 @@ import fetch from 'isomorphic-unfetch';
 export class BaseApi {
   baseUrl = '';
 
-  send(method: string, req: { path: string; query?: Record<string, string | number | boolean> }) {
+  send(
+    method: string,
+    req: {
+      path: string;
+      query?: Record<
+        string,
+        string | number | boolean | string[] | number[] | boolean[]
+      >;
+    }
+  ) {
     let url = this.baseUrl + req.path;
 
     if (req.query) {
-      url += '?';
+      const p = new URLSearchParams();
 
       for (const q in req.query) {
-        url += `\${encodeURIComponent(q)}=\${encodeURIComponent(req.query[q])}`;
+        const v = req.query[q];
+
+        if (Array.isArray(v)) {
+          for (const f of v) {
+            p.append(q, f.toString());
+          }
+        } else {
+          p.append(q, v.toString());
+        }
       }
+
+      url += '?';
+
+      url += p.toString();
     }
 
     fetch(url, {
@@ -198,11 +219,19 @@ export class ${n.typeName} {
   String kmethod(MethodNode m) {
     return '''
 ${description(m.description)}
-${m.name}(${m.parameters.map((x) => x.name + ': ' + x.type).join(', ')}) {
+${m.name}(${m.parameters.map(parameter).join(', ')}) {
   ${path(m.path, m.parameters)}
   this.api.send('${m.method}', {path, query: {${m.parameters.where((x) => x.location == 'query').map((x) => x.name).join(',')}}});
 }
 ''';
+  }
+
+  String parameter(ParamDecl param) {
+    final sb = StringBuffer('${param.name}: ${param.type}');
+    if (param.isArray) {
+      sb.write('[]');
+    }
+    return sb.toString();
   }
 
   String path(String path, List<ParamDecl> params) {

@@ -184,10 +184,11 @@ class OpenApiSecurityRequirement {
 }
 
 class OpenApiPaths {
-  final Map<String, OpenApiPath>? paths;
+  @JsonKey(defaultValue: {})
+  final Map<String, OpenApiPath> paths;
 
   OpenApiPaths({
-    this.paths,
+    required this.paths,
   });
 
   factory OpenApiPaths.fromJson(Map<String, dynamic> json) {
@@ -218,9 +219,11 @@ class OpenApiPath {
   final OpenApiOperation? head;
   final OpenApiOperation? patch;
   final OpenApiOperation? trace;
-  final List<OpenApiServer>? servers;
-  @JsonKey(fromJson: _parametersFromJson)
-  final List<ParametersType>? parameters;
+
+  @JsonKey(defaultValue: [])
+  final List<OpenApiServer> servers;
+  @JsonKey(fromJson: _parametersFromJson, defaultValue: [])
+  final List<ParametersType> parameters;
 
   OpenApiPath({
     this.ref,
@@ -234,8 +237,8 @@ class OpenApiPath {
     this.head,
     this.patch,
     this.trace,
-    this.servers,
-    this.parameters,
+    required this.servers,
+    required this.parameters,
   });
 
   factory OpenApiPath.fromJson(Map<String, dynamic> json) =>
@@ -273,12 +276,12 @@ class OpenApiOperation {
   final String? description;
   final OpenApiExternalDocumentation? externalDocs;
   final String? operationId;
-  @JsonKey(fromJson: _parametersFromJson)
-  final List<ParametersType>? parameters;
+  @JsonKey(fromJson: _parametersFromJson, defaultValue: [])
+  final List<ParametersType> parameters;
   @JsonKey(fromJson: _requestBodyFromJson)
   final RequestBodyValueType? requestBody;
-  @JsonKey(fromJson: _responsesFromJson)
-  final Map<String, ResponseValueType>? responses;
+  @JsonKey(fromJson: _responsesFromJson, defaultValue: {})
+  final Map<String, ResponseValueType> responses;
   // TODO: Define a type for callbacks https://swagger.io/specification/#callback-object
   final Map<String, dynamic>? callbacks;
   final bool? deprecated;
@@ -291,9 +294,9 @@ class OpenApiOperation {
     this.description,
     this.externalDocs,
     this.operationId,
-    this.parameters,
+    required this.parameters,
     this.requestBody,
-    this.responses,
+    required this.responses,
     this.callbacks,
     this.deprecated,
     this.security,
@@ -316,14 +319,10 @@ class OpenApiOperation {
     );
   }
 
-  static Map<String, ResponseValueType>? _responsesFromJson(
-    Map<String, dynamic>? json,
+  static Map<String, ResponseValueType> _responsesFromJson(
+    Map<String, dynamic> json,
   ) {
     final m = <String, ResponseValueType>{};
-
-    if (json == null) {
-      return null;
-    }
 
     for (var entry in json.entries) {
       m[entry.key] = Tuple.fromJson(
@@ -343,44 +342,47 @@ class OpenApiComponents {
   @JsonKey(defaultValue: {})
   final Map<String, OpenApiSchema> schemas;
 
-  @JsonKey(fromJson: _responsesFromJson)
-  final Map<String, Tuple<OpenApiResponse, OpenApiReference>>? responses;
+  @JsonKey(fromJson: _responsesFromJson, defaultValue: {})
+  final Map<String, Tuple<OpenApiResponse, OpenApiReference>> responses;
 
-  @JsonKey(fromJson: _parametersFromJson)
+  @JsonKey(fromJson: _parametersFromJson, defaultValue: {})
   final Map<String, Tuple<OpenApiParameter, OpenApiReference>>? parameters;
 
-  @JsonKey(fromJson: _examplesFromJson)
+  @JsonKey(fromJson: _examplesFromJson, defaultValue: {})
   final Map<String, Tuple<OpenApiExample, OpenApiReference>>? examples;
 
-  @JsonKey(fromJson: _requestsFromJson)
+  @JsonKey(fromJson: _requestsFromJson, defaultValue: {})
   final Map<String, Tuple<OpenApiRequestBody, OpenApiReference>>? requestBodies;
 
-  @JsonKey(fromJson: _headersFromJson)
+  @JsonKey(fromJson: _headersFromJson, defaultValue: {})
   final Map<String, Tuple<OpenApiHeader, OpenApiReference>>? headers;
 
-  @JsonKey(fromJson: _securitySchemesFromJson)
+  @JsonKey(fromJson: _securitySchemesFromJson, defaultValue: {})
   final Map<String, Tuple<OpenApiSecurityScheme, OpenApiReference>>?
       securitySchemes;
 
-  @JsonKey(fromJson: _linksFromJson)
+  @JsonKey(fromJson: _linksFromJson, defaultValue: {})
   final Map<String, Tuple<OpenApiLink, OpenApiReference>>? links;
+
+  @JsonKey(defaultValue: {})
   // TODO: Define a callback type: https://swagger.io/specification/#callback-object
   final Map<String, dynamic>? callbacks;
 
+  @JsonKey(defaultValue: {})
   // TODO: Define a path item type: https://swagger.io/specification/#path-item-object
   final Map<String, dynamic>? pathItems;
 
   OpenApiComponents({
     required this.schemas,
-    this.responses,
-    this.parameters,
-    this.examples,
-    this.requestBodies,
-    this.headers,
-    this.securitySchemes,
-    this.links,
-    this.callbacks,
-    this.pathItems,
+    required this.responses,
+    required this.parameters,
+    required this.examples,
+    required this.requestBodies,
+    required this.headers,
+    required this.securitySchemes,
+    required this.links,
+    required this.callbacks,
+    required this.pathItems,
   });
 
   static Map<String, Tuple<OpenApiLink, OpenApiReference>>? _linksFromJson(
@@ -744,12 +746,8 @@ class OpenApiReference {
       _$OpenApiReferenceFromJson(json);
 }
 
-List<ParametersType>? _parametersFromJson(Iterable<dynamic>? json) {
+List<ParametersType> _parametersFromJson(Iterable<dynamic> json) {
   List<ParametersType> m = [];
-
-  if (json == null) {
-    return null;
-  }
 
   for (var entry in json) {
     m.add(Tuple.fromJson(

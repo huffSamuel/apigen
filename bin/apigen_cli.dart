@@ -34,5 +34,5 @@ void main(List<String> arguments) {
   final ArgParser argParser = buildParser();
 
   final apiGenerator = ApiGenerator();
-  apiGenerator.generate('./spacetraders.json');
+  apiGenerator.generate('./petstore.json');
 }

@@ -129,9 +129,12 @@ OpenApiPath _$OpenApiPathFromJson(Map<String, dynamic> json) => OpenApiPath(
           ? null
           : OpenApiOperation.fromJson(json['trace'] as Map<String, dynamic>),
       servers: (json['servers'] as List<dynamic>?)
-          ?.map((e) => OpenApiServer.fromJson(e as Map<String, dynamic>))
-          .toList(),
-      parameters: _parametersFromJson(json['parameters'] as List?),
+              ?.map((e) => OpenApiServer.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [],
+      parameters: json['parameters'] == null
+          ? []
+          : _parametersFromJson(json['parameters'] as List),
     );
 
 OpenApiResponseObject _$OpenApiResponseObjectFromJson(
@@ -156,11 +159,15 @@ OpenApiOperation _$OpenApiOperationFromJson(Map<String, dynamic> json) =>
           : OpenApiExternalDocumentation.fromJson(
               json['externalDocs'] as Map<String, dynamic>),
       operationId: json['operationId'] as String?,
-      parameters: _parametersFromJson(json['parameters'] as List?),
+      parameters: json['parameters'] == null
+          ? []
+          : _parametersFromJson(json['parameters'] as List),
       requestBody: OpenApiOperation._requestBodyFromJson(
           json['requestBody'] as Map<String, dynamic>?),
-      responses: OpenApiOperation._responsesFromJson(
-          json['responses'] as Map<String, dynamic>?),
+      responses: json['responses'] == null
+          ? {}
+          : OpenApiOperation._responsesFromJson(
+              json['responses'] as Map<String, dynamic>),
       callbacks: json['callbacks'] as Map<String, dynamic>?,
       deprecated: json['deprecated'] as bool?,
       security: (json['security'] as List<dynamic>?)
@@ -179,22 +186,36 @@ OpenApiComponents _$OpenApiComponentsFromJson(Map<String, dynamic> json) =>
                 MapEntry(k, OpenApiSchema.fromJson(e as Map<String, dynamic>)),
           ) ??
           {},
-      responses: OpenApiComponents._responsesFromJson(
-          json['responses'] as Map<String, dynamic>?),
-      parameters: OpenApiComponents._parametersFromJson(
-          json['parameters'] as Map<String, dynamic>?),
-      examples: OpenApiComponents._examplesFromJson(
-          json['examples'] as Map<String, dynamic>?),
-      requestBodies: OpenApiComponents._requestsFromJson(
-          json['requestBodies'] as Map<String, dynamic>?),
-      headers: OpenApiComponents._headersFromJson(
-          json['headers'] as Map<String, dynamic>?),
-      securitySchemes: OpenApiComponents._securitySchemesFromJson(
-          json['securitySchemes'] as Map<String, dynamic>?),
-      links: OpenApiComponents._linksFromJson(
-          json['links'] as Map<String, dynamic>?),
-      callbacks: json['callbacks'] as Map<String, dynamic>?,
-      pathItems: json['pathItems'] as Map<String, dynamic>?,
+      responses: json['responses'] == null
+          ? {}
+          : OpenApiComponents._responsesFromJson(
+              json['responses'] as Map<String, dynamic>?),
+      parameters: json['parameters'] == null
+          ? {}
+          : OpenApiComponents._parametersFromJson(
+              json['parameters'] as Map<String, dynamic>?),
+      examples: json['examples'] == null
+          ? {}
+          : OpenApiComponents._examplesFromJson(
+              json['examples'] as Map<String, dynamic>?),
+      requestBodies: json['requestBodies'] == null
+          ? {}
+          : OpenApiComponents._requestsFromJson(
+              json['requestBodies'] as Map<String, dynamic>?),
+      headers: json['headers'] == null
+          ? {}
+          : OpenApiComponents._headersFromJson(
+              json['headers'] as Map<String, dynamic>?),
+      securitySchemes: json['securitySchemes'] == null
+          ? {}
+          : OpenApiComponents._securitySchemesFromJson(
+              json['securitySchemes'] as Map<String, dynamic>?),
+      links: json['links'] == null
+          ? {}
+          : OpenApiComponents._linksFromJson(
+              json['links'] as Map<String, dynamic>?),
+      callbacks: json['callbacks'] as Map<String, dynamic>? ?? {},
+      pathItems: json['pathItems'] as Map<String, dynamic>? ?? {},
     );
 
 OpenApiLink _$OpenApiLinkFromJson(Map<String, dynamic> json) => OpenApiLink(

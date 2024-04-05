@@ -60,21 +60,15 @@ class SyntaxBuilder {
     Generate syntax,
   ) {
     if (schema.components != null) {
-      for (final e in schema.components!.schemas.entries) {
-        switch (e.value) {
-          case final OpenApiObjectSchema obj:
-            objectType(e.key, obj, config, syntax);
-            break;
-          default:
-            if (isEnum(e.value)) {
-              enums(e.key, e.value, config, syntax);
-            } else {
-              typedef(e.key, e.value, config, syntax);
-            }
-
-            break;
+      schema.components!.schemas.forEach((k, v) {
+        if (v is OpenApiObjectSchema) {
+          objectType(k, v, config, syntax);
+        } else if (isEnum(v)) {
+          enums(k, v, config, syntax);
+        } else {
+          typedef(k, v, config, syntax);
         }
-      }
+      });
     }
 
     return syntax;
@@ -99,107 +93,127 @@ class ApiBuilder {
         ..fileName = config.fileName('DefaultApi'),
     });
 
-    if (schema.paths?.paths != null) {
-      for (final path in schema.paths!.paths!.entries) {
+    if (schema.paths != null) {
+      schema.paths!.paths.forEach((pathName, path) {
         List<ParamDecl> commonParams = [];
 
-        if (path.value.parameters?.isNotEmpty == true) {
-          for (final (index, param) in path.value.parameters!.indexed) {
-            commonParams.add(parameter(
+        for (final (index, param) in path.parameters.indexed) {
+          commonParams.add(parameter(
+            param,
+            syntax,
+            pathName,
+            index,
+          ));
+        }
+
+        operations(path).forEach((operationName, operation) {
+          final node = MethodNode(operationName, operation)
+            ..name = methodName(operation.operationId!)
+            ..path = pathName
+            ..method = operationName
+            ..parameters.addAll(commonParams);
+
+          for (final (index, param) in operation.parameters.indexed) {
+            node.parameters.add(parameter(
               param,
               syntax,
-              path.key,
+              operation.operationId!,
               index,
             ));
           }
-        }
 
-        for (final op in operations(path.value).entries) {
-          final node = MethodNode(op.key, op.value);
-          node.name = methodName(op.value.operationId!);
-          node.path = path.key;
-          node.method = op.key;
-          node.parameters.addAll(commonParams);
+          operation.responses.forEach((status, response) {
+            final className = config.className('${node.name}${status}Response');
+            // TODO: Handle non-JSON response objects
+            // This will require support from the actual language generators/templating engine.
+            // TODO: Foreach contenttype
+            if (hasContentType(response.b, ContentType.json)) {
+              final schema = getContent(response.b!, ContentType.json).schema;
 
-          if (op.value.parameters?.isNotEmpty == true) {
-            for (final (index, param) in op.value.parameters!.indexed) {
-              node.parameters.add(parameter(
-                param,
-                syntax,
-                op.value.operationId!,
-                index,
-              ));
-            }
-          }
-
-          if (op.value.responses?.isNotEmpty == true) {
-            for (final entry in op.value.responses!.entries) {
-              final className =
-                  config.className('${node.name}${entry.key}Response');
-              // TODO: Handle non-JSON response objects
-              // This will require support from the actual language generators/templating engine.
-              if (hasContentType(entry.value.b, ContentType.json)) {
-                final schema =
-                    getContent(entry.value.b!, ContentType.json).schema;
-
-                if (schema is! OpenApiObjectSchema) {
-                  continue;
-                }
-
-                Log.info("Creating response type", [className]);
-                bodyType(
-                  className,
-                  schema,
-                  config,
-                  syntax,
-                );
+              if (schema is! OpenApiObjectSchema) {
+                return;
               }
-            }
-          }
 
-          if (op.value.requestBody != null) {
-            if (op.value.requestBody?.a != null) {
-              Log.info("Cannot process references request body");
+              Log.info("Creating response type", [className]);
+              bodyType(
+                className,
+                schema,
+                config,
+                syntax,
+              );
             }
+          });
 
-            if (op.value.requestBody?.b != null) {
+          if (operation.requestBody != null) {
+            ParamDecl? param;
+
+            if (operation.requestBody!.a != null) {
+              param = ParamDecl(referenceClassName(operation.requestBody!.a!))
+                ..name = 'body'
+                ..type = referenceClassName(operation.requestBody!.a!);
+            } else if (operation.requestBody!.b != null) {
               final className = config.className('${node.name}Request');
 
-              if (hasContentType(op.value.requestBody!.b, ContentType.json)) {
+              if (hasContentType(operation.requestBody!.b, ContentType.json)) {
                 final schema =
-                    getContent(op.value.requestBody!.b!, ContentType.json)
+                    getContent(operation.requestBody!.b!, ContentType.json)
                         .schema;
 
                 switch (schema) {
+                  case final OpenApiArraySchema ray:
+                    switch (ray.items!.a) {
+                      case final OpenApiObjectSchema o:
+                        bodyType(className, o, config, syntax);
+                        param = ParamDecl('${node.name}Request')
+                          ..type = className;
+                        break;
+                      case final OpenApiReferenceSchema ref:
+                        param = ParamDecl('${node.name}Request')
+                          ..type = referenceClassName(ref);
+                        break;
+                      case null:
+                        Log.warn("This is likely a composite");
+                        param = ParamDecl("${node.name}Request")
+                          ..type = config.anyType();
+                        break;
+                      default:
+                        Log.error("Cannot process this type");
+                        break;
+                    }
+                    break;
                   case final OpenApiObjectSchema o:
                     bodyType(className, o, config, syntax);
-                    final param = ParamDecl('${node.name}Request');
+                    param = ParamDecl('${node.name}Request');
                     param.type = className;
-                    param.name = 'body';
-                    node.parameters.add(param);
                     break;
                   case final OpenApiReferenceSchema ref:
-                    final param = ParamDecl('${node.name}Request');
+                    param = ParamDecl('${node.name}Request');
                     param.type = referenceClassName(ref);
-                    param.name = 'body';
-                    node.parameters.add(param);
                     break;
                   default:
-                    Log.info("Cannot process this type");
+                    Log.error("Cannot process this type");
                 }
               }
+            } else {
+              Log.error("Unknown parameter type");
             }
+
+            if (param != null) {
+              param.name = 'body';
+              node.parameters.add(param);
+            }
+            return;
           }
 
-          if (op.value.security?.isNotEmpty == true) {
+          if (operation.security?.isNotEmpty == true) {
             // TODO: Handle
             Log.info('Handle security');
           }
 
-          if (op.value.tags?.isEmpty == true) {
+          if (operation.tags?.isEmpty == true) {
             syntax.apis['Default']!.methods.add(node);
           } else {
-            for (final at in op.value.tags!) {
+            for (final at in operation.tags!) {
               syntax.apis.putIfAbsent(
                   at,
                   () => ApiDeclNode('${at}Api')
@@ -208,8 +222,8 @@ class ApiBuilder {
               syntax.apis[at]!.methods.add(node);
             }
           }
-        }
-      }
+        });
+      });
     }
     return syntax;
   }
@@ -233,6 +247,31 @@ class ApiBuilder {
 
       if (param.b?.schema?.a != null) {
         switch (param.b!.schema!.a!) {
+          case OpenApiArraySchema ray:
+            p.isArray = true;
+            switch (ray.items!.a) {
+              case OpenApiReferenceSchema ref:
+                final t = syntax.types[referenceClassName(ref)]!;
+                p.type = t.typeName;
+                // TODO: p.isArray = true;
+                break;
+              case null:
+                Log.warn("Composite type");
+                p.type = config.anyType();
+                break;
+              default:
+                final r = ray.items!.a!;
+
+                if (r.type != null) {
+                  p.type = config.typeName(r.type!);
+                } else {
+                  Log.error("Unprocessable parameter - $id parameter $index");
+                  p.type = config.anyType();
+                }
+                break;
+            }
+
+            break;
           case OpenApiReferenceSchema ref:
             final t = syntax.types[referenceClassName(ref)]!;
             p.type = t.typeName;
