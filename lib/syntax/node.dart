@@ -45,7 +45,6 @@ class EnumValueDecl extends Node {
 
 class TypeDeclNode extends Node {
   late String typeName;
-  late String fileName;
 
   bool isTypedef = false;
   String typedef = '';
@@ -70,7 +69,6 @@ class TypeDeclNode extends Node {
 
 class ApiDeclNode extends Node {
   late String typeName;
-  late String fileName;
 
   bool isTypedef = false;
   String typedef = '';

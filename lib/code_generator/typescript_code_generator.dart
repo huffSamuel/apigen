@@ -1,23 +1,19 @@
 import 'dart:io';
 
-import '../syntax/param_node.dart';
-
+import '../application/generate.dart';
 import '../syntax/method_node.dart';
 import '../syntax/node.dart';
+import '../syntax/param_node.dart';
 
-const package = '''
-{
+const package = '''{
   "dependencies": {
     "isomorphic-unfetch": "^4.0.2"
   }
-}
+}''';
 
-''';
+const imports = '''import fetch from 'isomorphic-unfetch';''';
 
-const api = '''
-import fetch from 'isomorphic-unfetch';
-
-export class BaseApi {
+const api = '''export class BaseApi {
   baseUrl = '';
 
   send(
@@ -56,8 +52,7 @@ export class BaseApi {
       method,
     });
   }
-}
-''';
+}''';
 
 const helper = '''export const value = <T>(
   json: any,
@@ -130,33 +125,35 @@ class DeserializedValue<T> {
 // call needs to try to call `fromJson()` on that generic type
 
 class TypescriptCodeGenerator {
+  List<String> additional = [api];
+
   Map<String, String> additionalFiles = {
-    'util/helper.ts': helper,
     'package.json': package,
-    'api/api.ts': api
   };
 
-  generate(Iterable<Node> syntax) {
-    // TODO: Don't split this into separate files. Since it's generated we want to
-    // re-create a single {name}APIClient file each time.
+  generate(Generate generate) {
+    final sb = StringBuffer();
+
     for (final additionalFile in additionalFiles.entries) {
       final file = File('./out/${additionalFile.key}');
-      final dir = file.parent;
 
-      if (!dir.existsSync()) {
-        dir.createSync();
+      if (!file.parent.existsSync()) {
+        file.parent.createSync();
       }
 
-      file.writeAsStringSync(additionalFile.value);
+      file.writeAsString(additionalFile.value);
     }
 
-    for (final c in syntax.whereType<ApiDeclNode>()) {
+    for (final add in additional) {
+      sb.writeln(add);
+    }
+
+    for (final c in generate.apis.values.whereType<ApiDeclNode>()) {
       String src = klass(c);
-      final file = File('./out/api/' + c.fileName + '.ts');
-      file.writeAsStringSync(src);
+      sb.writeln(src);
     }
 
-    for (final c in syntax.whereType<TypeDeclNode>()) {
+    for (final c in generate.types.values.whereType<TypeDeclNode>()) {
       String src;
 
       if (c.isEnum) {
@@ -167,17 +164,16 @@ class TypescriptCodeGenerator {
         src = kinterface(c);
       }
 
-      final file = File('./out/dto/' + c.fileName + '.ts');
-
-      file.writeAsStringSync(src);
+      sb.writeln(src);
     }
+
+    final file = File('out/api.ts');
+    file.writeAsStringSync(sb.toString());
   }
 
   ktypedef(TypeDeclNode n) {
-    return '''
-${description(n.description)}
-export type ${n.typeName} = ${n.typedef};
-''';
+    return '''${description(n.description)}
+export type ${n.typeName} = ${n.typedef};''';
   }
 
   String description(String? d) {
@@ -190,40 +186,29 @@ export type ${n.typeName} = ${n.typedef};
  */''';
   }
 
-  String imports(String fileName, Iterable<String> types) {
-    return 'import { ${types.join(', ')} } from "./${fileName}";';
-  }
-
   kenum(TypeDeclNode n) {
-    return '''
-${description(n.description)}
+    return '''${description(n.description)}
 export enum ${n.typeName} {
   ${n.enumValues.map((x) => "${x.name} = '${x.value}',").join('\r\n  ')}
 }''';
   }
 
   klass(ApiDeclNode n) {
-    final source = '''
-import { BaseApi } from './api';
-
-export class ${n.typeName} {
+    final source = '''export class ${n.typeName} {
   constructor(private readonly api: BaseApi) {}
 
   ${n.methods.map((m) => kmethod(m)).join('\r\n  ')}
-}
-''';
+}''';
 
     return source;
   }
 
   String kmethod(MethodNode m) {
-    return '''
-${description(m.description)}
+    return '''${description(m.description)}
 ${m.name}(${m.parameters.map(parameter).join(', ')}) {
   ${path(m.path, m.parameters)}
   this.api.send('${m.method}', {path, query: {${m.parameters.where((x) => x.location == 'query').map((x) => x.name).join(',')}}});
-}
-''';
+}''';
   }
 
   String parameter(ParamDecl param) {
@@ -255,10 +240,7 @@ ${m.name}(${m.parameters.map(parameter).join(', ')}) {
   }
 
   kinterface(TypeDeclNode n) {
-    final i = n.references.entries.map((x) => imports(x.key, x.value));
-
-    final source = '''${i.join('\r\n')}
-${description(n.description)}
+    final source = '''${description(n.description)}
 export interface ${n.typeName} {
   ${n.properties.map(property).join('\r\n  ')}
 }''';

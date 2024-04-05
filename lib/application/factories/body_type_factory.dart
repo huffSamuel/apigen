@@ -8,7 +8,6 @@ void bodyType(
 ) {
   final t = TypeDeclNode(name, obj);
   t.typeName = config.typeName(name);
-  t.fileName = config.fileName(name);
 
   for (final p in obj.properties.entries) {
     final prop = property(

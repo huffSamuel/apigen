@@ -48,11 +48,6 @@ class TypescriptConfiguration extends LanguageSpecificConfiguration {
   }
 
   @override
-  String fileName(String name) {
-    return propertyName(name);
-  }
-
-  @override
   String enumValueName(String name) {
     final parts = name.toLowerCase().split('_');
 

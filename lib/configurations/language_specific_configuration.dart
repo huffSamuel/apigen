@@ -7,7 +7,6 @@ abstract class LanguageSpecificConfiguration {
   String typeName(String name);
   String propertyName(String name);
   String enumValueName(String name);
-  String fileName(String name);
   String methodName(String name);
   String anyType();
 

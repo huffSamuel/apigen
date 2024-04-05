@@ -8,11 +8,10 @@ void objectType(
 ) {
   final t = TypeDeclNode(name, obj);
   t.typeName = config.typeName(name);
-  t.fileName = config.fileName(name);
 
   for (final p in obj.properties.entries) {
     final prop = property(
-      config.className(p.key),
+      config.className(nestedTypeName(name, p.key, p.value, config)),
       p.value,
       t,
       config,

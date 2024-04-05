@@ -8,7 +8,6 @@ void typedef(
 ) {
   final t = TypeDeclNode(name, schema);
   t.typeName = config.typeName(name);
-  t.fileName = config.fileName(name);
   t.isTypedef = true;
   t.typedef = schema.type!;
 

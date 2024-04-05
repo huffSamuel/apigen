@@ -11,7 +11,6 @@ TypeDeclNode enums(
 
   t.isEnum = true;
   t.typeName = config.typeName(name);
-  t.fileName = config.fileName(name);
   t.enumValues.addAll(obj.enumValues!.map((x) {
     final d = EnumValueDecl(x);
 

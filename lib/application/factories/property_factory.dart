@@ -16,12 +16,10 @@ PropertyNode property(
       switch (ray.items!.a) {
         case final OpenApiReferenceSchema ref:
           pr.type = config.className(referenceName(ref));
-          t.references.putOrAdd(config.fileName(pr.type), pr.type);
           break;
         case final OpenApiObjectSchema obj:
           pr.type = config.className(name);
-          t.references.putOrAdd(config.fileName(name), name);
-          objectType(t.typeName + name, obj, config, generate);
+          objectType(name, obj, config, generate);
           break;
         case null:
           Log.warn(
@@ -32,17 +30,15 @@ PropertyNode property(
           pr.type = config.typeName(ray.items!.a!.type ?? 'unknown');
 
           if (schema.enumValues?.isNotEmpty == true) {
-            enums(t.typeName + name, schema, config, generate);
+            enums(name, schema, config, generate);
           }
       }
       break;
     case final OpenApiReferenceSchema ref:
       pr.type = config.className(referenceName(ref));
-      t.references.putOrAdd(config.fileName(pr.type), pr.type);
       break;
     case final OpenApiObjectSchema obj:
       pr.type = config.className(name);
-      t.references.putOrAdd(config.fileName(name), name);
       objectType(
         name,
         obj,
@@ -54,7 +50,7 @@ PropertyNode property(
       pr.type = config.typeName(schema.type ?? 'unknown');
 
       if (schema.enumValues?.isNotEmpty == true) {
-        enums(t.typeName + name, schema, config, generate);
+        enums(name, schema, config, generate);
       }
       break;
   }

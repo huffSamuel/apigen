@@ -1,10 +1,10 @@
 import '../../configurations/language_specific_configuration.dart';
 import '../../configurations/typescript/typescript.dart';
-import '../../extension/map.dart';
 import '../../schemas/schema.dart';
 import '../../syntax/node.dart';
 import '../../utils/log.dart';
 import '../generate.dart';
+import '../utils/inherit_parent_name.dart';
 import '../utils/reference_name.dart';
 
 part 'body_type_factory.dart';

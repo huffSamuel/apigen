@@ -17,14 +17,13 @@ import 'utils/log.dart';
 
 class ApiGenerator {
   final cg = TypescriptCodeGenerator();
-  final s = SyntaxBuilder(TypescriptConfiguration());
   final a = ApiBuilder(TypescriptConfiguration());
 
   Future<void> generate(String schemaPath) async {
     var schemaText = jsonDecode(await File(schemaPath).readAsString());
     var schema = OpenApi.fromJson(schemaText);
 
-    final create = ['./out', './out/dto', './out/api'];
+    final create = ['./out'];
 
     for (final c in create) {
       final out = Directory(c);
@@ -37,11 +36,9 @@ class ApiGenerator {
     }
 
     var generate = Generate();
-    generate = s.build(schema, generate);
     generate = a.build(schema, generate);
 
-    cg.generate(generate.types.values);
-    cg.generate(generate.apis.values);
+    cg.generate(generate);
   }
 }
 
@@ -49,31 +46,6 @@ class ApiGenerator {
 // --output, -o <path>
 // --schema, -s <path>
 // --format, -f [format...]
-
-class SyntaxBuilder {
-  final LanguageSpecificConfiguration config;
-
-  SyntaxBuilder(this.config);
-
-  Generate build(
-    OpenApi schema,
-    Generate syntax,
-  ) {
-    if (schema.components != null) {
-      schema.components!.schemas.forEach((k, v) {
-        if (v is OpenApiObjectSchema) {
-          objectType(k, v, config, syntax);
-        } else if (isEnum(v)) {
-          enums(k, v, config, syntax);
-        } else {
-          typedef(k, v, config, syntax);
-        }
-      });
-    }
-
-    return syntax;
-  }
-}
 
 class ApiBuilder {
   final LanguageSpecificConfiguration config;
@@ -87,10 +59,21 @@ class ApiBuilder {
   }
 
   Generate build(OpenApi schema, Generate syntax) {
+    if (schema.components != null) {
+      schema.components!.schemas.forEach((k, v) {
+        if (v is OpenApiObjectSchema) {
+          objectType(k, v, config, syntax);
+        } else if (isEnum(v)) {
+          enums(k, v, config, syntax);
+        } else {
+          typedef(k, v, config, syntax);
+        }
+      });
+    }
+
     syntax.apis.addAll({
       'Default': ApiDeclNode('DefaultApi')
         ..typeName = config.typeName('DefaultApi')
-        ..fileName = config.fileName('DefaultApi'),
     });
 
     if (schema.paths != null) {
@@ -165,16 +148,19 @@ class ApiBuilder {
                       case final OpenApiObjectSchema o:
                         bodyType(className, o, config, syntax);
                         param = ParamDecl('${node.name}Request')
-                          ..type = className;
+                          ..type = className
+                          ..isArray = true;
                         break;
                       case final OpenApiReferenceSchema ref:
                         param = ParamDecl('${node.name}Request')
-                          ..type = referenceClassName(ref);
+                          ..type = referenceClassName(ref)
+                          ..isArray = true;
                         break;
                       case null:
                         Log.warn("This is likely a composite");
                         param = ParamDecl("${node.name}Request")
-                          ..type = config.anyType();
+                          ..type = config.anyType()
+                          ..isArray = true;
                         break;
                       default:
                         Log.error("Cannot process this type");
@@ -216,9 +202,8 @@ class ApiBuilder {
             for (final at in operation.tags!) {
               syntax.apis.putIfAbsent(
                   at,
-                  () => ApiDeclNode('${at}Api')
-                    ..typeName = config.typeName('${at}Api')
-                    ..fileName = config.fileName('${at}Api'));
+                  () => ApiDeclNode('${config.className(api)}Api')
+                    ..typeName = config.typeName('${config.className(at)}Api'));
               syntax.apis[at]!.methods.add(node);
             }
           }
