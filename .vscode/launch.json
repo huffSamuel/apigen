@@ -8,7 +8,8 @@
             "name": "apigen",
             "request": "launch",
             "type": "dart",
-            "program": "bin/apigen_cli.dart"
+            "program": "bin/apigen_cli.dart",
+            "args": ["generate", "spacetraders.json"]
         }
     ]
 }

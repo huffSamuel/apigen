@@ -12,7 +12,7 @@ void objectType(
 
   for (final p in obj.properties.entries) {
     final prop = property(
-      config.className(t.typeName + config.className(p.key)),
+      config.className(p.key),
       p.value,
       t,
       config,

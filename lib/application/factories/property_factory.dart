@@ -5,7 +5,8 @@ PropertyNode property(
   OpenApiSchema schema,
   TypeDeclNode t,
   LanguageSpecificConfiguration config,
-  Generate generate,
+  Generate generate, 
+  
 ) {
   final pr = PropertyNode(name, schema);
   pr.name = config.propertyName(name);
@@ -20,7 +21,7 @@ PropertyNode property(
         case final OpenApiObjectSchema obj:
           pr.type = config.className(name);
           t.references.putOrAdd(config.fileName(name), name);
-          objectType(name, obj, config, generate);
+          objectType(t.typeName + name, obj, config, generate);
           break;
         case null:
           Log.warn(
@@ -31,7 +32,7 @@ PropertyNode property(
           pr.type = config.typeName(ray.items!.a!.type ?? 'unknown');
 
           if (schema.enumValues?.isNotEmpty == true) {
-            enums(name, schema, config, generate);
+            enums(t.typeName + name, schema, config, generate);
           }
       }
       break;
@@ -53,7 +54,7 @@ PropertyNode property(
       pr.type = config.typeName(schema.type ?? 'unknown');
 
       if (schema.enumValues?.isNotEmpty == true) {
-        enums(name, schema, config, generate);
+        enums(t.typeName + name, schema, config, generate);
       }
       break;
   }

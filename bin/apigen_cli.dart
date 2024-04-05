@@ -39,9 +39,6 @@ class GenerateCommand extends Command {
   @override
   String get name => "generate";
 
-  GenerateCommand() {
-    argParser.addOption("in", mandatory: true);
-  }
 
   void run() {
     final apiGenerator = ApiGenerator();
@@ -50,8 +47,6 @@ class GenerateCommand extends Command {
 }
 
 void main(List<String> arguments) {
-  final ArgParser argParser = buildParser();
-
   CommandRunner("apigen", "Generates OpenAPI spec API clients")
     ..addCommand(GenerateCommand())
     ..run(arguments);
