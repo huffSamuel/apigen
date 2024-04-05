@@ -253,7 +253,6 @@ class ApiBuilder {
               case OpenApiReferenceSchema ref:
                 final t = syntax.types[referenceClassName(ref)]!;
                 p.type = t.typeName;
-                // TODO: p.isArray = true;
                 break;
               case null:
                 Log.warn("Composite type");
@@ -270,7 +269,6 @@ class ApiBuilder {
                 }
                 break;
             }
-
             break;
           case OpenApiReferenceSchema ref:
             final t = syntax.types[referenceClassName(ref)]!;

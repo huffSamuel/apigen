@@ -1,4 +1,5 @@
 import 'package:args/args.dart';
+import 'package:args/command_runner.dart';
 
 import '../lib/api_generator.dart';
 
@@ -22,7 +23,8 @@ ArgParser buildParser() {
       'version',
       negatable: false,
       help: 'Print the tool version.',
-    );
+    )
+    ..addOption("schema", mandatory: true);
 }
 
 void printUsage(ArgParser argParser) {
@@ -30,9 +32,27 @@ void printUsage(ArgParser argParser) {
   print(argParser.usage);
 }
 
+class GenerateCommand extends Command {
+  @override
+  String get description => "Given a schema, generate an API implementation";
+
+  @override
+  String get name => "generate";
+
+  GenerateCommand() {
+    argParser.addOption("in", mandatory: true);
+  }
+
+  void run() {
+    final apiGenerator = ApiGenerator();
+    apiGenerator.generate(argResults!.rest.single);
+  }
+}
+
 void main(List<String> arguments) {
   final ArgParser argParser = buildParser();
 
-  final apiGenerator = ApiGenerator();
-  apiGenerator.generate('./petstore.json');
+  CommandRunner("apigen", "Generates OpenAPI spec API clients")
+    ..addCommand(GenerateCommand())
+    ..run(arguments);
 }
