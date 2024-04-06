@@ -7,46 +7,38 @@ import '../../domain/syntax/param_node.dart';
 
 const package = '''{
   "dependencies": {
-    "isomorphic-unfetch": "^4.0.2"
+    "isomorphic-unfetch": "^4.0.2",
+    "qs": "^6.12.0"
+  },
+  "devDependencies": {
+    "@types/qs": "^6.9.14"
   }
 }''';
 
-const imports = '''import fetch from 'isomorphic-unfetch';''';
+const imports = '''import fetch from 'isomorphic-unfetch';
+import {stringify} from 'qs';''';
 
-const api = '''export class BaseApi {
-  baseUrl = '';
+const api = '''$imports
+
+type QueryParams = Record<
+  string,
+  string | number | boolean | string[] | boolean[] | number[]
+>;
+
+export class BaseApi {
+  constructor(private readonly baseUrl: string) {}
 
   send(
     method: string,
-    req: {
-      path: string;
-      query?: Record<
-        string,
-        string | number | boolean | string[] | number[] | boolean[]
-      >;
+    path: string,
+    req?: {
+      query?: QueryParams
     }
   ) {
-    let url = this.baseUrl + req.path;
-
-    if (req.query) {
-      const p = new URLSearchParams();
-
-      for (const q in req.query) {
-        const v = req.query[q];
-
-        if (Array.isArray(v)) {
-          for (const f of v) {
-            p.append(q, f.toString());
-          }
-        } else {
-          p.append(q, v.toString());
-        }
-      }
-
-      url += '?';
-
-      url += p.toString();
-    }
+    const url = new URL(
+      req?.query ? `\${path}?\${stringify(req!.query)}`: path,
+      this.baseUrl,
+    );
 
     fetch(url, {
       method,
@@ -204,11 +196,27 @@ export enum ${n.typeName} {
   }
 
   String kmethod(MethodNode m) {
-    return '''${description(m.description)}
+    final sb = StringBuffer('''${description(m.description)}
 ${m.name}(${m.parameters.map(parameter).join(', ')}) {
   ${path(m.path, m.parameters)}
-  this.api.send('${m.method}', {path, query: {${m.parameters.where((x) => x.location == 'query').map((x) => x.name).join(',')}}});
-}''';
+  this.api.send('${m.method}', path''');
+
+  if (m.parameters.any((x) => x.location != 'path')) {
+    sb.write(', {');
+  }
+
+  if(m.parameters.any((x) => x.location == 'query')) {
+    sb.write('query: {${m.parameters.where((x) => x.location == 'query').map((x) => x.name).join(',')}}');
+  }
+  
+
+  if (m.parameters.any((x) => x.location != 'path')) {
+    sb.write('}');
+  }
+
+  sb.write(');}');
+
+    return sb.toString();
   }
 
   String parameter(ParamDecl param) {

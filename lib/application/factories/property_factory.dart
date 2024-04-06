@@ -27,6 +27,8 @@ PropertyNode property(
           if (config.supports(compositeTypeFeature(comp))) {
             // TODO: Generate the composite type
             Log.info("Generate the composite type");
+
+            // If it's a composite but only contains a single child spec then it isn't actually a composite.
           }
           pr.type = config.anyType();
           break;

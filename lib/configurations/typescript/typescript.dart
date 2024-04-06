@@ -1,3 +1,5 @@
+import 'package:apigen_cli/domain/schemas/schema.dart';
+
 import '../../application/feature.dart';
 import '../../application/utils/casing.dart';
 import '../language_specific_configuration.dart';
@@ -30,12 +32,12 @@ class TypescriptConfiguration extends LanguageSpecificConfiguration {
 
   @override
   String className(String name) {
-    return typeName(name[0].toUpperCase() + name.substring(1));
+    return typeName(firstUpper(name));
   }
 
   @override
   String propertyName(String name) {
-    return pascalCase([name]);
+    return firstLower(name);
   }
 
   @override
@@ -59,7 +61,7 @@ class TypescriptConfiguration extends LanguageSpecificConfiguration {
       return typeMap[name]!;
     }
 
-    return pascalCase([name]);
+    return firstUpper(name);
   }
 
   @override
@@ -67,6 +69,6 @@ class TypescriptConfiguration extends LanguageSpecificConfiguration {
 
   @override
   String methodName(String name) {
-    return camelCase([name]);
+    return camelCase(name.split('-'));
   }
 }

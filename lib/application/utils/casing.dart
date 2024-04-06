@@ -16,3 +16,12 @@ String pascalCase(List<String> parts) {
 String _pascal(String p) {
   return p[0].toUpperCase() + p.substring(1).toLowerCase();
 }
+
+/// Similar to PascalCase but preserves the casing of the string except for the first character.
+String firstUpper(String str) {
+  return str[0].toUpperCase() + str.substring(1);
+}
+
+String firstLower(String str) {
+  return str[0].toLowerCase() + str.substring(1);
+}

@@ -6,7 +6,6 @@ import 'application/factories/factories.dart';
 import 'application/feature.dart';
 import 'application/generate.dart';
 import 'application/log.dart';
-import 'application/utils/casing.dart';
 import 'application/utils/is.dart';
 import 'configurations/language_specific_configuration.dart';
 import 'configurations/typescript/typescript.dart';
@@ -55,9 +54,7 @@ class ApiBuilder {
   ApiBuilder(this.config);
 
   methodName(String operationId) {
-    final parts = camelCase(operationId.split('-'));
-
-    return config.methodName(parts);
+    return config.methodName(operationId);
   }
 
   Generate build(OpenApi schema, Generate syntax) {
@@ -234,10 +231,6 @@ class ApiBuilder {
                 final t = syntax.types[referenceClassName(ref)]!;
                 p.type = t.typeName;
                 break;
-              case null:
-                Log.warn("Composite type");
-                p.type = config.anyType();
-                break;
               default:
                 final r = (ray.items!.a! as OpenApiSchema);
 
@@ -269,8 +262,7 @@ class ApiBuilder {
         }
       } else {
         if (config.supports(compositeTypeFeature(param.b!.schema!.b))) {
-          // TODO: Generate the actual composite type information here.
-          // This probably needs to create a new typedef
+          Log.info("Generate the composite type");
           p.type = config.anyType();
         } else {
           Log.warn('This generator does not support composite schemas.');

@@ -11,7 +11,7 @@ void bodyType(
 
   for (final p in obj.properties.entries) {
     final prop = property(
-      config.className(camelCase([name, p.key])),
+      config.className(firstUpper(name) + firstUpper(p.key)),
       p.value,
       t,
       config,
