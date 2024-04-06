@@ -1,9 +1,9 @@
 import 'dart:io';
 
-import '../application/generate.dart';
-import '../syntax/method_node.dart';
-import '../syntax/node.dart';
-import '../syntax/param_node.dart';
+import '../generate.dart';
+import '../../domain/syntax/method_node.dart';
+import '../../domain/syntax/node.dart';
+import '../../domain/syntax/param_node.dart';
 
 const package = '''{
   "dependencies": {

@@ -1,7 +1,7 @@
 import 'package:args/args.dart';
 import 'package:args/command_runner.dart';
 
-import '../lib/api_generator.dart';
+import 'package:apigen_cli/api_generator.dart';
 
 const String version = '0.0.1';
 
@@ -40,6 +40,7 @@ class GenerateCommand extends Command {
   String get name => "generate";
 
 
+  @override
   void run() {
     final apiGenerator = ApiGenerator();
     apiGenerator.generate(argResults!.rest.single);

@@ -1,19 +1,21 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'application/code_generator/typescript_code_generator.dart';
 import 'application/factories/factories.dart';
+import 'application/feature.dart';
 import 'application/generate.dart';
-import 'application/utils/is_enum.dart';
-import 'code_generator/typescript_code_generator.dart';
+import 'application/log.dart';
+import 'application/utils/casing.dart';
+import 'application/utils/is.dart';
 import 'configurations/language_specific_configuration.dart';
 import 'configurations/typescript/typescript.dart';
-import 'schemas/helpers.dart';
-import 'schemas/schema.dart';
-import 'schemas/spec_file.dart';
-import 'syntax/method_node.dart';
-import 'syntax/node.dart';
-import 'syntax/param_node.dart';
-import 'utils/log.dart';
+import 'domain/schemas/helpers.dart';
+import 'domain/schemas/schema.dart';
+import 'domain/schemas/spec_file.dart';
+import 'domain/syntax/method_node.dart';
+import 'domain/syntax/node.dart';
+import 'domain/syntax/param_node.dart';
 
 class ApiGenerator {
   final cg = TypescriptCodeGenerator();
@@ -116,8 +118,6 @@ class ApiBuilder {
               if (schema is! OpenApiObjectSchema) {
                 return;
               }
-
-              Log.info("Creating response type", [className]);
               bodyType(
                 className,
                 schema,
@@ -128,19 +128,18 @@ class ApiBuilder {
           });
 
           if (operation.requestBody != null) {
+            final body = operation.requestBody!;
             ParamDecl? param;
 
-            if (operation.requestBody!.a != null) {
+            if (body.a != null) {
               param = ParamDecl(referenceClassName(operation.requestBody!.a!))
                 ..name = 'body'
                 ..type = referenceClassName(operation.requestBody!.a!);
-            } else if (operation.requestBody!.b != null) {
+            } else if (body.b != null) {
               final className = config.className('${node.name}Request');
 
-              if (hasContentType(operation.requestBody!.b, ContentType.json)) {
-                final schema =
-                    getContent(operation.requestBody!.b!, ContentType.json)
-                        .schema;
+              if (hasContentType(body.b, ContentType.json)) {
+                final schema = getContent(body.b!, ContentType.json).schema;
 
                 switch (schema) {
                   case final OpenApiArraySchema ray:
@@ -193,7 +192,6 @@ class ApiBuilder {
 
           if (operation.security?.isNotEmpty == true) {
             // TODO: Handle
-            Log.info('Handle security');
           }
 
           if (operation.tags?.isEmpty == true) {
@@ -222,11 +220,8 @@ class ApiBuilder {
     final p = ParamDecl('$id.$index');
 
     if (param.a != null) {
-      // TODO: Pull a reference out of the pre-processed parameters
-      Log.info(
-        'Get this reference from schema.components.parameters',
-      );
-      p.type = config.anyType();
+      p.type = referenceClassName(param.a!);
+      // TODO: This needs to get the location from the pre-built type
     } else if (param.b != null) {
       p.schema = param.b!;
 
@@ -244,13 +239,13 @@ class ApiBuilder {
                 p.type = config.anyType();
                 break;
               default:
-                final r = ray.items!.a!;
+                final r = (ray.items!.a! as OpenApiSchema);
 
-                if (r.type != null) {
-                  p.type = config.typeName(r.type!);
-                } else {
-                  Log.error("Unprocessable parameter - $id parameter $index");
-                  p.type = config.anyType();
+                p.type = config.typeName(r.type!);
+
+                if (isEnum(r)) {
+                  // TODO: Process a nested enum.
+                  Log.warn("Unprocessed enum");
                 }
                 break;
             }
@@ -273,11 +268,14 @@ class ApiBuilder {
             break;
         }
       } else {
-        // Hand this off to the language config. It either needs to modify the generated syntax with a new composite type
-        // and assign the referenced type OR it needs to assign the any type, if supported. If the language can't support
-        // composites or anys, /shrug?
-        Log.warn('This is a composite schema which we cannot process yet');
-        p.type = config.anyType();
+        if (config.supports(compositeTypeFeature(param.b!.schema!.b))) {
+          // TODO: Generate the actual composite type information here.
+          // This probably needs to create a new typedef
+          p.type = config.anyType();
+        } else {
+          Log.warn('This generator does not support composite schemas.');
+          p.type = config.anyType();
+        }
       }
     } else {
       Log.error(' Unprocessable parameter - $id parameter $index');

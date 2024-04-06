@@ -1,11 +1,12 @@
 import '../../configurations/language_specific_configuration.dart';
-import '../../configurations/typescript/typescript.dart';
-import '../../schemas/schema.dart';
-import '../../syntax/node.dart';
-import '../../utils/log.dart';
+import '../../domain/schemas/schema.dart';
+import '../../domain/syntax/node.dart';
+import '../feature.dart';
 import '../generate.dart';
+import '../log.dart';
+import '../utils/casing.dart';
 import '../utils/inherit_parent_name.dart';
-import '../utils/reference_name.dart';
+import '../utils/name.dart';
 
 part 'body_type_factory.dart';
 part 'enum_factory.dart';

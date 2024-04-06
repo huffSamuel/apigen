@@ -1,5 +1,6 @@
 import '../../configurations/language_specific_configuration.dart';
-import '../../schemas/schema.dart';
+import '../../domain/schemas/schema.dart';
+import 'is.dart';
 
 String nestedTypeName(
   String parentName,
@@ -7,15 +8,9 @@ String nestedTypeName(
   OpenApiSchema schema,
   LanguageSpecificConfiguration config,
 ) {
-  if (isObject(schema) ||
-      isEnum(schema) ||
-      (schema is OpenApiArraySchema &&
-          (isObject(schema.items?.a) || isEnum(schema.items?.a)))) {
+  if (isDerivedType(schema)) {
     return config.className(parentName) + config.className(name);
   }
 
   return config.className(name);
 }
-
-bool isObject(OpenApiSchema? s) => s is OpenApiObjectSchema;
-bool isEnum(OpenApiSchema? s) => s?.enumValues?.isEmpty == false;

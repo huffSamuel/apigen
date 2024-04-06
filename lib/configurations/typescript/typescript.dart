@@ -1,31 +1,22 @@
+import '../../application/feature.dart';
+import '../../application/utils/casing.dart';
 import '../language_specific_configuration.dart';
-
-String camelCase(List<String> parts) {
-  return parts
-      .skip(1)
-      .fold(parts[0], (a, b) => a + b[0].toUpperCase() + b.substring(1));
-}
 
 // TODO: CLI Options
 // [] - install dependencies
 // [] - format code (must install dependencies or have prettier available)
 
 class TypescriptConfiguration extends LanguageSpecificConfiguration {
-  // This is type AllOfType = A & B & C;
   @override
-  bool get supportsAllOf => true;
-
-  // IDK how we'd do this (for now) so unsupported.
-  @override
-  bool get supportsAnyOf => false;
-
-  // This is type OneOfType = A | B | C;
-  @override
-  bool get supportsOneOf => true;
+  List<Feature> supportedFeatures = [
+    Feature.allOf,
+    Feature.oneOf,
+  ];
 
   @override
   String get configurationName => 'Typescript';
 
+  // TODO: Add DateTime support
   @override
   Map<String, String> get typeMap => {
         'string': 'string',
@@ -44,7 +35,7 @@ class TypescriptConfiguration extends LanguageSpecificConfiguration {
 
   @override
   String propertyName(String name) {
-    return name[0].toLowerCase() + name.substring(1);
+    return pascalCase([name]);
   }
 
   @override
@@ -68,7 +59,7 @@ class TypescriptConfiguration extends LanguageSpecificConfiguration {
       return typeMap[name]!;
     }
 
-    return name;
+    return pascalCase([name]);
   }
 
   @override

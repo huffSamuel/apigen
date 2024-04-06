@@ -249,6 +249,7 @@ class OpenApiPath {
 class OpenApiResponseObject implements HasContent {
   final String description;
   final Map<String, dynamic>? headers;
+  @override
   final Map<String, OpenApiMediaType>? content;
   final Map<String, dynamic>? links;
 
@@ -600,6 +601,7 @@ class OpenApiHeader {
 @JsonSerializable()
 class OpenApiRequestBody extends HasContent {
   final String? description;
+  @override
   final Map<String, OpenApiMediaType>? content;
   final bool? required;
 
@@ -693,7 +695,7 @@ class OpenApiResponse {
 
 @JsonSerializable()
 class OpenApiMediaType {
-  final OpenApiSchema? schema;
+  final Schema? schema;
   final dynamic example;
   final Map<String, dynamic>? examples;
   final Map<String, OpenApiEncoding>? encoding;

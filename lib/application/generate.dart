@@ -1,4 +1,4 @@
-import '../syntax/node.dart';
+import '../domain/syntax/node.dart';
 
 class Generate {
   final Map<String, TypeDeclNode> types = {};

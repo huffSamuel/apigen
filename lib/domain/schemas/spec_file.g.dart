@@ -298,7 +298,7 @@ OpenApiMediaType _$OpenApiMediaTypeFromJson(Map<String, dynamic> json) =>
     OpenApiMediaType(
       schema: json['schema'] == null
           ? null
-          : OpenApiSchema.fromJson(json['schema'] as Map<String, dynamic>),
+          : Schema.fromJson(json['schema'] as Map<String, dynamic>),
       example: json['example'],
       examples: json['examples'] as Map<String, dynamic>?,
       encoding: (json['encoding'] as Map<String, dynamic>?)?.map(

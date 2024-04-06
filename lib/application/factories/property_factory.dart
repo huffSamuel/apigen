@@ -5,8 +5,7 @@ PropertyNode property(
   OpenApiSchema schema,
   TypeDeclNode t,
   LanguageSpecificConfiguration config,
-  Generate generate, 
-  
+  Generate generate,
 ) {
   final pr = PropertyNode(name, schema);
   pr.name = config.propertyName(name);
@@ -22,12 +21,18 @@ PropertyNode property(
           objectType(name, obj, config, generate);
           break;
         case null:
-          Log.warn(
-              'This is likely a composite schema that we cannot handle at this time');
+          pr.type = config.anyType();
+          break;
+        case final CompositeSchema comp:
+          if (config.supports(compositeTypeFeature(comp))) {
+            // TODO: Generate the composite type
+            Log.info("Generate the composite type");
+          }
           pr.type = config.anyType();
           break;
         default:
-          pr.type = config.typeName(ray.items!.a!.type ?? 'unknown');
+          final t = (ray.items!.a as OpenApiSchema).type;
+          pr.type = config.typeName(t ?? 'unknown');
 
           if (schema.enumValues?.isNotEmpty == true) {
             enums(name, schema, config, generate);
@@ -45,6 +50,12 @@ PropertyNode property(
         config,
         generate,
       );
+      break;
+    case final CompositeSchema comp:
+      if (config.supports(compositeTypeFeature(comp))) {
+        Log.info("Generate composite type");
+      }
+      pr.type = config.anyType();
       break;
     default:
       pr.type = config.typeName(schema.type ?? 'unknown');

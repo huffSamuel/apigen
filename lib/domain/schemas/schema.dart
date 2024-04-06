@@ -321,8 +321,8 @@ class OpenApiObjectSchema extends OpenApiSchema {
 @JsonSerializable()
 class OpenApiArraySchema extends OpenApiSchema {
   @JsonKey(fromJson: _itemsFromJson)
-  final Tuple<OpenApiSchema, bool>? items;
-  final List<OpenApiSchema>? prefixItems;
+  final Tuple<Schema, bool>? items;
+  final List<Schema>? prefixItems;
   final OpenApiSchema? contains;
   final int? minContains;
   final int? maxContains;
@@ -353,13 +353,13 @@ class OpenApiArraySchema extends OpenApiSchema {
   factory OpenApiArraySchema.fromJson(JsonMap json) =>
       _$OpenApiArraySchemaFromJson(json);
 
-  static Tuple<OpenApiSchema, bool>? _itemsFromJson(JsonMap? json) {
+  static Tuple<Schema, bool>? _itemsFromJson(JsonMap? json) {
     if (json == null) {
       return null;
     }
 
     return Tuple.fromJson(
-      OpenApiSchema.fromJson,
+      Schema.fromJson,
       (j) => j as bool,
       json,
     );

@@ -109,7 +109,7 @@ OpenApiArraySchema _$OpenApiArraySchemaFromJson(Map<String, dynamic> json) =>
       items: OpenApiArraySchema._itemsFromJson(
           json['items'] as Map<String, dynamic>?),
       prefixItems: (json['prefixItems'] as List<dynamic>?)
-          ?.map((e) => OpenApiSchema.fromJson(e as Map<String, dynamic>))
+          ?.map((e) => Schema.fromJson(e as Map<String, dynamic>))
           .toList(),
       contains: json['contains'] == null
           ? null
