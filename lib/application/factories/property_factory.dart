@@ -20,17 +20,8 @@ PropertyNode property(
           pr.type = config.className(name);
           objectType(name, obj, config, generate);
           break;
-        case null:
-          pr.type = config.anyType();
-          break;
         case final CompositeSchema comp:
-          if (config.supports(compositeTypeFeature(comp))) {
-            // TODO: Generate the composite type
-            Log.info("Generate the composite type");
-
-            // If it's a composite but only contains a single child spec then it isn't actually a composite.
-          }
-          pr.type = config.anyType();
+            pr.type = config.typename(schema: comp);          
           break;
         default:
           final t = (ray.items!.a as OpenApiSchema).type;

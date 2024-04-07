@@ -1,5 +1,6 @@
-import 'package:apigen_cli/domain/schemas/schema.dart';
-
+import '../../api_generator.dart';
+import '../../domain/schemas/schema.dart';
+import '../../domain/schemas/spec_file.dart';
 import '../../application/feature.dart';
 import '../../application/utils/casing.dart';
 import '../language_specific_configuration.dart';
@@ -70,5 +71,31 @@ class TypescriptConfiguration extends LanguageSpecificConfiguration {
   @override
   String methodName(String name) {
     return camelCase(name.split('-'));
+  }
+
+  @override
+  String typename({String? name, Schema? schema}) {
+    if (name != null) {
+      return typeName(name);
+    }
+
+    if (schema == null) {
+      return anyType();
+    }
+
+    switch (schema) {
+      case final OpenApiReferenceSchema ref:
+        return typeName(referenceClassName(ref));
+      case final OpenApiArraySchema ray:
+        return typename(schema: ray.items!.a!) + '[]';
+      case final CompositeSchema composite:
+        String separator =
+            switch (composite.runtimeType) { AllOfSchema => '&', _ => '|' };
+        return composite.schemas
+            .map((x) => typename(schema: x))
+            .join(separator);
+      default:
+        return anyType();
+    }
   }
 }

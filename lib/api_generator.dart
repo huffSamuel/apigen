@@ -261,13 +261,7 @@ class ApiBuilder {
             break;
         }
       } else {
-        if (config.supports(compositeTypeFeature(param.b!.schema!.b))) {
-          Log.info("Generate the composite type");
-          p.type = config.anyType();
-        } else {
-          Log.warn('This generator does not support composite schemas.');
-          p.type = config.anyType();
-        }
+        p.type = config.typename(schema: param.b!.schema!.b!);
       }
     } else {
       Log.error(' Unprocessable parameter - $id parameter $index');

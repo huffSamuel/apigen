@@ -1,4 +1,5 @@
 import '../application/feature.dart';
+import '../domain/schemas/schema.dart';
 
 abstract class LanguageSpecificConfiguration {
   Map<String, String> get typeMap;
@@ -8,6 +9,7 @@ abstract class LanguageSpecificConfiguration {
 
   String className(String name);
   String typeName(String name);
+  String typename({String name, Schema schema});
   String propertyName(String name);
   String enumValueName(String name);
   String methodName(String name);
