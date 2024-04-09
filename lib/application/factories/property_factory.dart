@@ -21,7 +21,8 @@ PropertyNode property(
           objectType(name, obj, config, generate);
           break;
         case final CompositeSchema comp:
-            pr.type = config.typename(schema: comp);          
+          // TODO: This needs to generate any non-reference derived subtypees.
+          pr.type = config.typename(schema: comp);
           break;
         default:
           final t = (ray.items!.a as OpenApiSchema).type;
@@ -45,10 +46,8 @@ PropertyNode property(
       );
       break;
     case final CompositeSchema comp:
-      if (config.supports(compositeTypeFeature(comp))) {
-        Log.info("Generate composite type");
-      }
-      pr.type = config.anyType();
+      // TODO: This needs to generate any non-reference derived subtypees.
+      pr.type = config.typename(schema: comp);
       break;
     default:
       pr.type = config.typeName(schema.type ?? 'unknown');

@@ -1,21 +1,14 @@
-import '../../api_generator.dart';
-import '../../domain/schemas/schema.dart';
-import '../../domain/schemas/spec_file.dart';
-import '../../application/feature.dart';
 import '../../application/utils/casing.dart';
+import '../../application/utils/name.dart';
+import '../../domain/schemas/schema.dart';
 import '../language_specific_configuration.dart';
 
-// TODO: CLI Options
-// [] - install dependencies
-// [] - format code (must install dependencies or have prettier available)
+class TypescriptOptions {
+  bool installDependencies = false;
+  bool formatCode = false;
+}
 
 class TypescriptConfiguration extends LanguageSpecificConfiguration {
-  @override
-  List<Feature> supportedFeatures = [
-    Feature.allOf,
-    Feature.oneOf,
-  ];
-
   @override
   String get configurationName => 'Typescript';
 
@@ -74,6 +67,11 @@ class TypescriptConfiguration extends LanguageSpecificConfiguration {
   }
 
   @override
+  String arrayType(String name) {
+    return '$name[]';
+  }
+
+  @override
   String typename({String? name, Schema? schema}) {
     if (name != null) {
       return typeName(name);
@@ -85,12 +83,11 @@ class TypescriptConfiguration extends LanguageSpecificConfiguration {
 
     switch (schema) {
       case final OpenApiReferenceSchema ref:
-        return typeName(referenceClassName(ref));
+        return typeName(referenceName(ref));
       case final OpenApiArraySchema ray:
-        return typename(schema: ray.items!.a!) + '[]';
+        return arrayType(typename(schema: ray.items!.a!));
       case final CompositeSchema composite:
-        String separator =
-            switch (composite.runtimeType) { AllOfSchema => '&', _ => '|' };
+        String separator = (composite is AllOfSchema) ? '&' : '|';
         return composite.schemas
             .map((x) => typename(schema: x))
             .join(separator);

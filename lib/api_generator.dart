@@ -3,12 +3,13 @@ import 'dart:io';
 
 import 'application/code_generator/typescript_code_generator.dart';
 import 'application/factories/factories.dart';
-import 'application/feature.dart';
 import 'application/generate.dart';
 import 'application/log.dart';
 import 'application/utils/is.dart';
+import 'application/utils/name.dart';
 import 'configurations/language_specific_configuration.dart';
 import 'configurations/typescript/typescript.dart';
+import 'domain/content_type.dart';
 import 'domain/schemas/helpers.dart';
 import 'domain/schemas/schema.dart';
 import 'domain/schemas/spec_file.dart';
@@ -129,9 +130,9 @@ class ApiBuilder {
             ParamDecl? param;
 
             if (body.a != null) {
-              param = ParamDecl(referenceClassName(operation.requestBody!.a!))
+              param = ParamDecl(referenceName(operation.requestBody!.a!))
                 ..name = 'body'
-                ..type = referenceClassName(operation.requestBody!.a!);
+                ..type = referenceName(operation.requestBody!.a!);
             } else if (body.b != null) {
               final className = config.className('${node.name}Request');
 
@@ -149,11 +150,10 @@ class ApiBuilder {
                         break;
                       case final OpenApiReferenceSchema ref:
                         param = ParamDecl('${node.name}Request')
-                          ..type = referenceClassName(ref)
+                          ..type = referenceName(ref)
                           ..isArray = true;
                         break;
                       case null:
-                        Log.warn("This is likely a composite");
                         param = ParamDecl("${node.name}Request")
                           ..type = config.anyType()
                           ..isArray = true;
@@ -170,7 +170,7 @@ class ApiBuilder {
                     break;
                   case final OpenApiReferenceSchema ref:
                     param = ParamDecl('${node.name}Request');
-                    param.type = referenceClassName(ref);
+                    param.type = referenceName(ref);
                     break;
                   default:
                     Log.error("Cannot process this type");
@@ -205,6 +205,10 @@ class ApiBuilder {
         });
       });
     }
+
+    if (syntax.apis['Default']!.methods.isEmpty) {
+      syntax.apis.remove('Default');
+    }
     return syntax;
   }
 
@@ -217,7 +221,7 @@ class ApiBuilder {
     final p = ParamDecl('$id.$index');
 
     if (param.a != null) {
-      p.type = referenceClassName(param.a!);
+      p.type = referenceName(param.a!);
       // TODO: This needs to get the location from the pre-built type
     } else if (param.b != null) {
       p.schema = param.b!;
@@ -225,10 +229,9 @@ class ApiBuilder {
       if (param.b?.schema?.a != null) {
         switch (param.b!.schema!.a!) {
           case OpenApiArraySchema ray:
-            p.isArray = true;
             switch (ray.items!.a) {
               case OpenApiReferenceSchema ref:
-                final t = syntax.types[referenceClassName(ref)]!;
+                final t = syntax.types[referenceName(ref)]!;
                 p.type = t.typeName;
                 break;
               default:
@@ -242,9 +245,10 @@ class ApiBuilder {
                 }
                 break;
             }
+            p.type = config.arrayType(p.type);
             break;
           case OpenApiReferenceSchema ref:
-            final t = syntax.types[referenceClassName(ref)]!;
+            final t = syntax.types[referenceName(ref)]!;
             p.type = t.typeName;
             break;
           default:
@@ -289,26 +293,4 @@ class ApiBuilder {
 
     return operations;
   }
-}
-
-bool hasContentType(HasContent? obj, ContentType contentType) {
-  return obj != null &&
-      obj.content != null &&
-      obj.content![contentType.type] != null;
-}
-
-OpenApiMediaType getContent(HasContent obj, ContentType contentType) {
-  return obj.content![contentType.type]!;
-}
-
-enum ContentType {
-  json("application/json");
-
-  const ContentType(this.type);
-
-  final String type;
-}
-
-String referenceClassName(OpenApiReferenceSchema ref) {
-  return ref.ref.substring(ref.ref.lastIndexOf('/') + 1);
 }
