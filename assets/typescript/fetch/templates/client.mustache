@@ -35,8 +35,8 @@ export class {{ typeName }} {
 
     {{# methods}}
       {{# description}}
-  /* 
-    {{& description }}
+  /**
+    {{& description }} 
   */
       {{/ description}}
   {{ name }}({{# parameters}} {{ name }}: {{ type }},{{/ parameters}}) {
@@ -68,10 +68,13 @@ export enum {{ typeName }} {
 export type {{ typeName }} = {{ typedef }}
   {{/ isTypeDef }}
   {{# isType }} 
+{{! Consider replacing this with a class that supports multiple deserialize methods }}
 export interface {{ typeName }} {
   {{# properties }}
   {{# description }}
-  /*  {{& description }} */
+  /** 
+    {{& description }} 
+  */
   {{/ description}}
   {{ name }}: {{ type }};
   {{/ properties }}

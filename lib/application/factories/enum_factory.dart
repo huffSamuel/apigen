@@ -3,7 +3,7 @@ part of 'factories.dart';
 void enums(
   String name,
   OpenApiSchema obj,
-  LanguageSpecificConfiguration config,
+  GenerateConfig config,
   Generate generate
 ) {
   final t = TypeDeclNode(name, obj);

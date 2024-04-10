@@ -74,10 +74,6 @@ class DeserializedValue<T> {
   }
 }''';
 
-// TODO: for classes create a better deserializer
-// TODO: See if we can inspect a generic's prototype. If so, the new Value()
-// call needs to try to call `fromJson()` on that generic type
-
 String joinPath(List<String> paths) {
   return paths.join(Platform.pathSeparator);
 }
@@ -90,7 +86,7 @@ class TypescriptCodeGenerator {
   final templateLoader = TemplateLoader();
 
   generate(
-      Generate generate, LanguageSpecificConfiguration configuration) async {
+      Generate generate, GenerateConfig configuration) async {
     final assetDirectory = Directory(joinPath([
       Directory.current.path,
       'assets',

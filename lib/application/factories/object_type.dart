@@ -3,7 +3,7 @@ part of 'factories.dart';
 void objectType(
   String name,
   OpenApiObjectSchema obj,
-  LanguageSpecificConfiguration config,
+  GenerateConfig config,
   Generate generate,
 ) {
   final t = TypeDeclNode(name, obj);

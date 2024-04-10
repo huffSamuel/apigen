@@ -8,7 +8,7 @@ class TypescriptOptions {
   bool formatCode = false;
 }
 
-class TypescriptConfiguration extends LanguageSpecificConfiguration {
+class TypescriptFetch extends GenerateConfig {
   @override
   String get name => 'typescript-fetch';
 

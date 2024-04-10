@@ -4,7 +4,7 @@ PropertyNode property(
   String name,
   OpenApiSchema schema,
   TypeDeclNode t,
-  LanguageSpecificConfiguration config,
+  GenerateConfig config,
   Generate generate,
 ) {
   final pr = PropertyNode(name, schema);

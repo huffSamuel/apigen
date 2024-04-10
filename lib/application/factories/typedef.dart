@@ -3,7 +3,7 @@ part of 'factories.dart';
 void typedef(
   String name,
   OpenApiSchema schema,
-  LanguageSpecificConfiguration config,
+  GenerateConfig config,
   Generate generate,
 ) {
   final t = TypeDeclNode(name, schema);

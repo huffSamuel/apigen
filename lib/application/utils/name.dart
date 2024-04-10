@@ -7,7 +7,7 @@ String referenceName(OpenApiReferenceSchema ref) {
   return ref.ref.substring(ref.ref.lastIndexOf('/') + 1);
 }
 
-String operationName(String id, LanguageSpecificConfiguration c) {
+String operationName(String id, GenerateConfig c) {
   // TODO: This really needs to split on invalidLanguageNameChars
   final parts = camelCase(id.split('-'));
 
@@ -18,7 +18,7 @@ String nestedTypeName(
   String parentName,
   String name,
   OpenApiSchema schema,
-  LanguageSpecificConfiguration config,
+  GenerateConfig config,
 ) {
   if (isDerivedType(schema)) {
     return config.className(parentName) + config.className(name);

@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import '../configurations/language_specific_configuration.dart';
-import '../configurations/typescript/typescript.dart';
+import '../configurations/typescript/typescript-fetch.dart';
 import '../domain/content_type.dart';
 import '../domain/schemas/helpers.dart';
 import '../domain/schemas/schema.dart';
@@ -19,7 +19,7 @@ import 'utils/name.dart';
 
 class ApiGenerator {
   final cg = TypescriptCodeGenerator();
-  final a = ApiBuilder(TypescriptConfiguration());
+  final a = ApiBuilder(TypescriptFetch());
 
   Future<void> generate(String schemaPath) async {
     var schemaText = jsonDecode(await File(schemaPath).readAsString());
@@ -40,7 +40,7 @@ class ApiGenerator {
     var generate = Generate();
     generate = a.build(schema, generate);
 
-    cg.generate(generate, TypescriptConfiguration());
+    cg.generate(generate, TypescriptFetch());
   }
 }
 
@@ -50,7 +50,7 @@ class ApiGenerator {
 // --format, -f [format...]
 
 class ApiBuilder {
-  final LanguageSpecificConfiguration config;
+  final GenerateConfig config;
 
   ApiBuilder(this.config);
 
@@ -187,7 +187,7 @@ class ApiBuilder {
           }
 
           if (operation.security?.isNotEmpty == true) {
-            // TODO: Handle
+            // TODO: Handle security on the request
           }
 
           if (operation.tags?.isEmpty == true) {
@@ -239,7 +239,6 @@ class ApiBuilder {
                 p.type = config.typeName(r.type!);
 
                 if (isEnum(r)) {
-                  // TODO: Process a nested enum.
                   Log.warn("Unprocessed enum");
                 }
                 break;

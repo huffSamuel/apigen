@@ -1,6 +1,6 @@
 import '../domain/schemas/schema.dart';
 
-abstract class LanguageSpecificConfiguration {
+abstract class GenerateConfig {
   Map<String, String> get typeMap;
   String get name;
   List<String> get reservedWords;
