@@ -2,6 +2,10 @@ import '../domain/schemas/schema.dart';
 
 abstract class GenerateConfig {
   Map<String, String> get typeMap;
+  /// Name of this language configuration.
+  /// 
+  /// This name determines the assets to use when generating source code. For instance:  
+  /// `"typescript-fetch"` will use assets in `/assets/typescript/fetch`. 
   String get name;
   List<String> get reservedWords;
 
