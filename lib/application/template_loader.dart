@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:apigen_cli/application/log.dart';
 import 'package:mustache_template/mustache.dart';
 
 final partialRegex = RegExp("{{>(.*)}}");
@@ -10,7 +11,7 @@ class TemplateLoader {
 
   Future<(Template?, Map<String, Template?>)> _loadTemplate(String path) async {
     if (_templateCache[path] != null) {
-      print('[INFO] Using cached template');
+      Log.info('Using cached template');
       return (_templateCache[path], <String, Template>{});
     }
 

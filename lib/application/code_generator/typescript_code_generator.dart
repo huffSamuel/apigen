@@ -1,41 +1,12 @@
 import 'dart:io';
 
+import 'package:apigen_cli/application/template_loader.dart';
+
 import '../../configurations/language_specific_configuration.dart';
 import '../../domain/syntax/method_node.dart';
 import '../../domain/syntax/node.dart';
 import '../../domain/syntax/param_node.dart';
 import '../generate.dart';
-
-const imports = '''import fetch from 'isomorphic-unfetch';
-import {stringify} from 'qs';''';
-
-const api = '''$imports
-
-type QueryParams = Record<
-  string,
-  string | number | boolean | string[] | boolean[] | number[]
->;
-
-export class BaseApi {
-  constructor(private readonly baseUrl: string) {}
-
-  send(
-    method: string,
-    path: string,
-    req?: {
-      query?: QueryParams
-    }
-  ) {
-    const url = new URL(
-      req?.query ? `\${path}?\${stringify(req!.query)}`: path,
-      this.baseUrl,
-    );
-
-    fetch(url, {
-      method,
-    });
-  }
-}''';
 
 const helper = '''export const value = <T>(
   json: any,
@@ -116,9 +87,10 @@ String fileName(File file) {
 }
 
 class TypescriptCodeGenerator {
-  List<String> additional = [api];
+  final templateLoader = TemplateLoader();
 
-  generate(Generate generate, LanguageSpecificConfiguration configuration) {
+  generate(
+      Generate generate, LanguageSpecificConfiguration configuration) async {
     final assetDirectory = Directory(joinPath([
       Directory.current.path,
       'assets',
@@ -131,33 +103,70 @@ class TypescriptCodeGenerator {
       }
     });
 
-    final sb = StringBuffer();
+    final templateDirectory =
+        Directory(joinPath([assetDirectory.path, 'templates']));
 
-    for (final add in additional) {
-      sb.writeln(add);
-    }
+    final clientTemplate = await templateLoader
+        .load(joinPath([templateDirectory.path, 'client.mustache']));
 
-    for (final c in generate.apis.values.whereType<ApiDeclNode>()) {
-      String src = klass(c);
-      sb.writeln(src);
-    }
+    final props = {
+      'open_curly': '{',
+      'close_curly': '}',
+      'classes': generate.apis.values.map((e) => {
+            'typeName': e.typeName,
+            'methods': e.methods.map((m) => {
+                  'description': m.description,
+                  'name': m.name,
+                  'path': m.path,
+                  'method': m.method,
+                  'hasBody': m.parameters.any((x) => x.location == 'body'),
+                  'body': m.parameters
+                      .where((x) => x.location == 'body')
+                      .map((x) => {
+                            'name': x.name,
+                          }),
+                  'hasRequestParameters': m.parameters.any(
+                      (x) => x.location == 'query' || x.location == 'body'),
+                  'hasQueryParameters': m.parameters.any(
+                    (x) => x.location == 'query',
+                  ),
+                  'queryParameters': m.parameters
+                      .where((element) => element.location == 'query')
+                      .map((x) => {
+                            'name': x.name,
+                          }),
+                  'pathParameters': m.parameters
+                      .where((element) => element.location == 'path')
+                      .map((x) => {
+                            'name': x.name,
+                          }),
+                  'parameters': m.parameters.map((p) => {
+                        'name': p.name,
+                        'type': p.type,
+                      }),
+                }),
+          }),
+      'types': generate.types.values.map((e) => {
+            'typeName': e.typeName,
+            'isEnum': e.isEnum,
+            'enumValues': e.enumValues.map((e) => {
+                  'name': e.name,
+                  'value': e.value,
+                }),
+            'isTypeDef': e.isTypedef,
+            'typedef': e.typedef,
+            'isType': !e.isEnum && !e.isTypedef,
+            'properties': e.properties.map((e) => {
+                  'description': e.description,
+                  'name': e.name,
+                  'type': e.type,
+                })
+          })
+    };
 
-    for (final c in generate.types.values.whereType<TypeDeclNode>()) {
-      String src;
+    final client = clientTemplate!.renderString(props);
 
-      if (c.isEnum) {
-        src = kenum(c);
-      } else if (c.isTypedef) {
-        src = ktypedef(c);
-      } else {
-        src = kinterface(c);
-      }
-
-      sb.writeln(src);
-    }
-
-    final file = File('out/api.ts');
-    file.writeAsStringSync(sb.toString());
+    File('./out/api.ts').writeAsStringSync(client);
   }
 
   ktypedef(TypeDeclNode n) {

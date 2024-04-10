@@ -8,7 +8,7 @@ class ParamDecl extends Node {
   OpenApiParameter? schema;
   String get name => schema?.name ?? _name ?? 'unknown';
   set name(String value) => _name = value;
-  String get location => schema?.location ?? 'unknown';
+  String get location => schema?.location ?? 'body';
   bool isArray = false;
 
   ParamDecl(super.id);

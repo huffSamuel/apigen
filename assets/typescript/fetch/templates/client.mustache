@@ -1,0 +1,80 @@
+import fetch from 'isomorphic-unfetch';
+import {stringify} from 'qs';
+
+type QueryParams = Record<
+  string,
+  string | number | boolean | string[] | boolean[] | number[]
+>;
+
+export class BaseApi {
+  constructor(private readonly baseUrl: string) {}
+
+  send(
+    method: string,
+    path: string,
+    req?: {
+      query?: QueryParams,
+      body?: any,
+    }
+  ) {
+    const url = new URL(
+      req?.query ? `${path}?${stringify(req!.query)}`: path,
+      this.baseUrl,
+    );
+
+    fetch(url, {
+      method,
+      body: req?.body,
+    });
+  }
+}
+
+{{# classes }} 
+export class {{ typeName }} {
+  constructor(private readonly api: BaseApi) {}
+
+    {{# methods}}
+      {{# description}}
+  /* 
+    {{& description }}
+  */
+      {{/ description}}
+  {{ name }}({{# parameters}} {{ name }}: {{ type }},{{/ parameters}}) {
+    const path = '{{& path }}'{{# pathParameters }}
+      .replace('{{open_curly}}{{ name }}{{close_curly}}', {{ name }}.toString()){{/ pathParameters}};
+    this.api.send('{{ method }}', path{{# hasRequestParameters}}, {
+        {{# hasRequestParameters }}
+        query: { {{# queryParameters }}{{ name }}, {{/ queryParameters }}},
+        {{/ hasRequestParameters }}
+        {{# hasBody }}
+        body: {{# body}}{{ name }}{{/ body}},
+        {{/ hasBody }}
+    }{{/ hasRequestParameters}});
+  }
+
+    {{/ methods}}
+}
+{{/ classes }}
+
+{{# types }}
+  {{# isEnum }}
+export enum {{ typeName }} {
+  {{# enumValues }}
+  {{ name }} = '{{ value }}',
+  {{/ enumValues }}
+}
+  {{/ isEnum }}
+  {{# isTypeDef }}
+export type {{ typeName }} = {{ typedef }}
+  {{/ isTypeDef }}
+  {{# isType }} 
+export interface {{ typeName }} {
+  {{# properties }}
+  {{# description }}
+  /*  {{& description }} */
+  {{/ description}}
+  {{ name }}: {{ type }};
+  {{/ properties }}
+}
+  {{/ isType }}
+{{/ types }}

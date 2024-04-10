@@ -6,7 +6,15 @@ class MethodNode extends Node {
   final OpenApiOperation schema;
   final List<ParamDecl> parameters = [];
 
-  String? get description => schema.description;
+  String? get description {
+    final s = schema.description?.trim();
+
+    if ( s == null || s.isEmpty) {
+      return null;
+    }
+
+    return s;
+  }
 
   late String name;
   late String path;

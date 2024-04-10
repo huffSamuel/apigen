@@ -184,7 +184,6 @@ class ApiBuilder {
               param.name = 'body';
               node.parameters.add(param);
             }
-            return;
           }
 
           if (operation.security?.isNotEmpty == true) {
@@ -197,7 +196,7 @@ class ApiBuilder {
             for (final at in operation.tags!) {
               syntax.apis.putIfAbsent(
                   at,
-                  () => ApiDeclNode('${config.className(api)}Api')
+                  () => ApiDeclNode('${config.className(at)}Api')
                     ..typeName = config.typeName('${config.className(at)}Api'));
               syntax.apis[at]!.methods.add(node);
             }
