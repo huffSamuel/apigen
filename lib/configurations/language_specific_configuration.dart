@@ -2,7 +2,7 @@ import '../domain/schemas/schema.dart';
 
 abstract class LanguageSpecificConfiguration {
   Map<String, String> get typeMap;
-  String get configurationName;
+  String get name;
   List<String> get reservedWords;
 
   String arrayType(String name);

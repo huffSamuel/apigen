@@ -1,19 +1,10 @@
 import 'dart:io';
 
-import '../generate.dart';
+import '../../configurations/language_specific_configuration.dart';
 import '../../domain/syntax/method_node.dart';
 import '../../domain/syntax/node.dart';
 import '../../domain/syntax/param_node.dart';
-
-const package = '''{
-  "dependencies": {
-    "isomorphic-unfetch": "^4.0.2",
-    "qs": "^6.12.0"
-  },
-  "devDependencies": {
-    "@types/qs": "^6.9.14"
-  }
-}''';
+import '../generate.dart';
 
 const imports = '''import fetch from 'isomorphic-unfetch';
 import {stringify} from 'qs';''';
@@ -116,25 +107,31 @@ class DeserializedValue<T> {
 // TODO: See if we can inspect a generic's prototype. If so, the new Value()
 // call needs to try to call `fromJson()` on that generic type
 
+String joinPath(List<String> paths) {
+  return paths.join(Platform.pathSeparator);
+}
+
+String fileName(File file) {
+  return file.path.split('/').last;
+}
+
 class TypescriptCodeGenerator {
   List<String> additional = [api];
 
-  Map<String, String> additionalFiles = {
-    'package.json': package,
-  };
+  generate(Generate generate, LanguageSpecificConfiguration configuration) {
+    final assetDirectory = Directory(joinPath([
+      Directory.current.path,
+      'assets',
+      ...configuration.name.split('-'),
+    ]));
 
-  generate(Generate generate) {
-    final sb = StringBuffer();
-
-    for (final additionalFile in additionalFiles.entries) {
-      final file = File('./out/${additionalFile.key}');
-
-      if (!file.parent.existsSync()) {
-        file.parent.createSync();
+    assetDirectory.listSync().forEach((element) {
+      if (element is File) {
+        element.copy('./out/${fileName(element)}');
       }
+    });
 
-      file.writeAsString(additionalFile.value);
-    }
+    final sb = StringBuffer();
 
     for (final add in additional) {
       sb.writeln(add);
@@ -201,20 +198,20 @@ ${m.name}(${m.parameters.map(parameter).join(', ')}) {
   ${path(m.path, m.parameters)}
   this.api.send('${m.method}', path''');
 
-  if (m.parameters.any((x) => x.location != 'path')) {
-    sb.write(', {');
-  }
+    if (m.parameters.any((x) => x.location != 'path')) {
+      sb.write(', {');
+    }
 
-  if(m.parameters.any((x) => x.location == 'query')) {
-    sb.write('query: {${m.parameters.where((x) => x.location == 'query').map((x) => x.name).join(',')}}');
-  }
-  
+    if (m.parameters.any((x) => x.location == 'query')) {
+      sb.write(
+          'query: {${m.parameters.where((x) => x.location == 'query').map((x) => x.name).join(',')}}');
+    }
 
-  if (m.parameters.any((x) => x.location != 'path')) {
-    sb.write('}');
-  }
+    if (m.parameters.any((x) => x.location != 'path')) {
+      sb.write('}');
+    }
 
-  sb.write(');}');
+    sb.write(');}');
 
     return sb.toString();
   }

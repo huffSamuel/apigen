@@ -10,7 +10,7 @@ class TypescriptOptions {
 
 class TypescriptConfiguration extends LanguageSpecificConfiguration {
   @override
-  String get configurationName => 'Typescript';
+  String get name => 'typescript-fetch';
 
   // TODO: Add DateTime support
   @override

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+
 import 'package:mustache_template/mustache.dart';
 
 final partialRegex = RegExp("{{>(.*)}}");

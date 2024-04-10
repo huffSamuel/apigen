@@ -1,21 +1,21 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'application/code_generator/typescript_code_generator.dart';
-import 'application/factories/factories.dart';
-import 'application/generate.dart';
-import 'application/log.dart';
-import 'application/utils/is.dart';
-import 'application/utils/name.dart';
-import 'configurations/language_specific_configuration.dart';
-import 'configurations/typescript/typescript.dart';
-import 'domain/content_type.dart';
-import 'domain/schemas/helpers.dart';
-import 'domain/schemas/schema.dart';
-import 'domain/schemas/spec_file.dart';
-import 'domain/syntax/method_node.dart';
-import 'domain/syntax/node.dart';
-import 'domain/syntax/param_node.dart';
+import '../configurations/language_specific_configuration.dart';
+import '../configurations/typescript/typescript.dart';
+import '../domain/content_type.dart';
+import '../domain/schemas/helpers.dart';
+import '../domain/schemas/schema.dart';
+import '../domain/schemas/spec_file.dart';
+import '../domain/syntax/method_node.dart';
+import '../domain/syntax/node.dart';
+import '../domain/syntax/param_node.dart';
+import 'code_generator/typescript_code_generator.dart';
+import 'factories/factories.dart';
+import 'generate.dart';
+import 'log.dart';
+import 'utils/is.dart';
+import 'utils/name.dart';
 
 class ApiGenerator {
   final cg = TypescriptCodeGenerator();
@@ -40,7 +40,7 @@ class ApiGenerator {
     var generate = Generate();
     generate = a.build(schema, generate);
 
-    cg.generate(generate);
+    cg.generate(generate, TypescriptConfiguration());
   }
 }
 
